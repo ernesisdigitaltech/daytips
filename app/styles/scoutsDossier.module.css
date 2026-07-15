@@ -1,0 +1,301 @@
+/* ============================================
+   The Scout's Dossier — shared design system
+   Import this in any page: 
+   import sd from '@/app/styles/scoutsDossier.module.css'
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+/* ---- tokens (kept as comments for reference) ----
+  --pitch-ink: #0E1912
+  --chalk: #F7F5EF
+  --pitch-green: #3B7A57
+  --whistle-gold:#D4A017
+  --card-red: #A63A2E
+------------------------------------------------- */
+
+.page {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 900px 500px at 50% -10%, rgba(59, 122, 87, 0.14), transparent),
+    #0E1912;
+  color: #F7F5EF;
+  font-family: 'Inter', sans-serif;
+  animation: pageFadeIn 0.5s ease-out both;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.stagger > * {
+  opacity: 0;
+  animation: riseIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.stagger > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger > *:nth-child(2) { animation-delay: 0.12s; }
+.stagger > *:nth-child(3) { animation-delay: 0.19s; }
+.stagger > *:nth-child(4) { animation-delay: 0.26s; }
+.stagger > *:nth-child(5) { animation-delay: 0.33s; }
+
+@keyframes riseIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.eyebrow {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #F7F5EF88;
+}
+
+.h1 {
+  font-family: 'Big Shoulders Display', sans-serif;
+  font-weight: 800;
+  font-size: 2.1rem;
+  letter-spacing: 0.01em;
+  margin: 0.15rem 0 0.4rem;
+}
+
+/* ---- Card, elevated with subtle hover lift ---- */
+.card {
+  background: linear-gradient(180deg, rgba(247,245,239,0.045), rgba(247,245,239,0.02));
+  border: 1px solid rgba(247,245,239,0.10);
+  border-radius: 14px;
+  padding: 1.75rem;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+}
+.card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(59, 122, 87, 0.45);
+  box-shadow: 0 12px 32px -12px rgba(0,0,0,0.5);
+}
+
+/* ---- The stamp ring — reuses the fixture-confidence motif for the coin balance ---- */
+.stampRing {
+  width: 128px;
+  height: 128px;
+  margin: 0.75rem auto 1.25rem;
+  border-radius: 50%;
+  border: 2px dashed #D4A01799;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  animation: ringSpin 40s linear infinite;
+}
+@keyframes ringSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.stampRingInner {
+  animation: counterSpin 40s linear infinite;
+}
+@keyframes counterSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+
+.coinNumber {
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 600;
+  font-size: 2.75rem;
+  color: #D4A017;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.coinNumber.pulse {
+  animation: coinPulse 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes coinPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* ---- Buttons ---- */
+.btnPrimary {
+  width: 100%;
+  padding: 0.9rem;
+  background: #3B7A57;
+  color: #F7F5EF;
+  border: none;
+  border-radius: 999px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+}
+.btnPrimary:hover:not(:disabled) {
+  background: #468f66;
+  box-shadow: 0 8px 20px -8px rgba(59, 122, 87, 0.6);
+}
+.btnPrimary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btnPrimary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btnGhost {
+  background: transparent;
+  border: 1px solid rgba(247,245,239,0.2);
+  color: #F7F5EF;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+.btnGhost:hover {
+  border-color: #F7F5EF66;
+  background: rgba(247,245,239,0.06);
+}
+
+.linkGold {
+  color: #D4A017;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.875rem;
+  transition: filter 0.2s ease, transform 0.2s ease;
+  display: inline-block;
+}
+.linkGold:hover {
+  filter: brightness(1.2);
+  transform: translateX(2px);
+}
+
+/* ---- Admin panel ---- */
+.adminPanel {
+  margin-top: 2rem;
+  background: linear-gradient(180deg, rgba(212,160,23,0.07), rgba(212,160,23,0.02));
+  border: 1px solid rgba(212,160,23,0.3);
+  border-radius: 14px;
+  padding: 1.25rem 1.25rem 1.5rem;
+}
+.adminLabel {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #D4A017;
+  font-weight: 600;
+  margin-bottom: 0.9rem;
+}
+.adminLinks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.adminLink {
+  color: #F7F5EF;
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.7rem 0.9rem;
+  background: rgba(247,245,239,0.04);
+  border: 1px solid rgba(247,245,239,0.1);
+  border-radius: 8px;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, padding-left 0.2s ease;
+}
+.adminLink:hover {
+  background: rgba(212,160,23,0.12);
+  border-color: rgba(212,160,23,0.4);
+  padding-left: 1.15rem;
+}
+
+.message {
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+  color: #D4A017;
+  animation: riseIn 0.3s ease-out both;
+}
+
+/* ============================================
+   Bottom tab bar (mobile-first nav, e.g. admin section)
+   ============================================ */
+.tabBarWrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+  pointer-events: none;
+  z-index: 50;
+}
+.tabBar {
+  pointer-events: auto;
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  background: rgba(22, 36, 26, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(247,245,239,0.10);
+  border-radius: 999px;
+  padding: 8px;
+  box-shadow: 0 16px 40px -14px rgba(0,0,0,0.6);
+}
+.tabItem {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  text-decoration: none;
+  color: #F7F5EF77;
+  padding: 8px 4px;
+  border-radius: 999px;
+  transition: color 0.2s ease;
+  position: relative;
+}
+.tabItem svg { width: 20px; height: 20px; transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+.tabLabel { font-size: 10px; font-weight: 600; font-family: 'Inter', sans-serif; }
+
+.tabItemActive {
+  color: #F7F5EF;
+}
+.tabItemActive .tabIconRing {
+  transform: translateY(-16px);
+  background: #D4A017;
+  box-shadow: 0 10px 24px -6px rgba(212,160,23,0.65);
+}
+.tabItemActive svg { color: #0E1912; }
+.tabItemActive .tabLabel { transform: translateY(-10px); color: #D4A017; }
+
+.tabIconRing {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease, box-shadow 0.3s ease;
+  color: #F7F5EF99;
+}
+
+/* Top header used with the tab bar layout */
+.topBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 4px;
+}
+.topBarBack {
+  color: #F7F5EF99;
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.pageShell {
+  padding-bottom: 108px; /* keeps content clear of the floating tab bar */
+}

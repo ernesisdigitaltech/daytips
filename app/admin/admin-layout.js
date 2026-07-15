@@ -3,12 +3,46 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
+import sd from '@/app/styles/scoutsDossier.module.css';
 
 const NAV_LINKS = [
-  { href: '/admin/overview', label: 'Overview' },
-  { href: '/admin/add-prediction', label: 'Add Prediction' },
-  { href: '/admin/manage-predictions', label: 'Manage Predictions' },
+  {
+    href: '/admin/overview',
+    label: 'Overview',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 3v18h18" />
+        <path d="M7 15l4-6 3 3 5-7" />
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/add-prediction',
+    label: 'Add',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 5v14M5 12h14" />
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/manage-predictions',
+    label: 'Manage',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 6h11M9 12h11M9 18h11" />
+        <path d="M4 6h.01M4 12h.01M4 18h.01" />
+      </svg>
+    ),
+  },
 ];
+
+const TITLES = {
+  '/admin': 'Admin Dashboard',
+  '/admin/overview': 'Overview',
+  '/admin/add-prediction': 'Add Prediction',
+  '/admin/manage-predictions': 'Manage Predictions',
+};
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
@@ -44,106 +78,48 @@ export default function AdminLayout({ children }) {
 
   if (checking) {
     return (
-      <div style={styles.loadingPage}>
-        <p style={styles.loadingText}>Checking admin access…</p>
+      <div className={sd.page} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p className={sd.eyebrow}>Checking admin access…</p>
       </div>
     );
   }
 
   if (!authorized) return null;
 
+  const pageTitle = TITLES[pathname] || 'Admin';
+  const today = new Date().toLocaleDateString([], { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase();
+
   return (
-    <div style={styles.shell}>
-      <aside style={styles.sidebar}>
-        <p style={styles.sidebarTitle}>DayTips Admin</p>
-        <nav style={styles.nav}>
+    <div className={sd.page}>
+      <div className={sd.topBar}>
+        <div>
+          <p className={sd.eyebrow}>{today}</p>
+          <h1 className={sd.h1} style={{ fontSize: '1.6rem' }}>{pageTitle}</h1>
+        </div>
+        <a href="/dashboard" className={sd.topBarBack}>← Dashboard</a>
+      </div>
+
+      <div className={sd.pageShell}>
+        {children}
+      </div>
+
+      <div className={sd.tabBarWrap}>
+        <nav className={sd.tabBar}>
           {NAV_LINKS.map(link => {
             const isActive = pathname === link.href;
             return (
               <a
                 key={link.href}
                 href={link.href}
-                style={{
-                  ...styles.navLink,
-                  ...(isActive ? styles.navLinkActive : {}),
-                }}
+                className={`${sd.tabItem} ${isActive ? sd.tabItemActive : ''}`}
               >
-                {link.label}
+                <span className={sd.tabIconRing}>{link.icon}</span>
+                <span className={sd.tabLabel}>{link.label}</span>
               </a>
             );
           })}
         </nav>
-        <a href="/" style={styles.backLink}>← Back to site</a>
-      </aside>
-      <main style={styles.content}>{children}</main>
+      </div>
     </div>
   );
 }
-
-const styles = {
-  loadingPage: {
-    minHeight: '100vh',
-    backgroundColor: '#0E1912',
-    color: '#F7F5EF',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    fontFamily: 'Inter, sans-serif',
-  },
-  loadingText: {
-    fontFamily: 'IBM Plex Mono, monospace',
-  },
-  shell: {
-    display: 'flex',
-    minHeight: '100vh',
-    backgroundColor: '#0E1912',
-  },
-  sidebar: {
-    width: '220px',
-    flexShrink: 0,
-    backgroundColor: '#16241a',
-    borderRight: '1px solid #3B7A5744',
-    padding: '1.5rem 1rem',
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.5rem',
-  },
-  sidebarTitle: {
-    fontFamily: '"Big Shoulders Display", sans-serif',
-    fontSize: '1.3rem',
-    color: '#F7F5EF',
-    margin: '0 0 1.5rem 0.5rem',
-  },
-  nav: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '0.25rem',
-  },
-  navLink: {
-    display: 'block',
-    padding: '0.65rem 0.75rem',
-    borderRadius: '6px',
-    color: '#F7F5EFcc',
-    textDecoration: 'none',
-    fontSize: '0.95rem',
-    fontFamily: 'Inter, sans-serif',
-  },
-  navLinkActive: {
-    backgroundColor: '#3B7A5733',
-    color: '#F7F5EF',
-    fontWeight: 600,
-    borderLeft: '3px solid #D4A017',
-    paddingLeft: 'calc(0.75rem - 3px)',
-  },
-  backLink: {
-    marginTop: 'auto',
-    color: '#F7F5EF77',
-    textDecoration: 'none',
-    fontSize: '0.85rem',
-    padding: '0.5rem',
-  },
-  content: {
-    flex: 1,
-    minWidth: 0,
-  },
-};
