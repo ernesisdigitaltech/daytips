@@ -228,6 +228,28 @@ export default function HomePage() {
           </div>
         ))}
       </main>
+
+      <footer style={styles.footer}>
+        <div style={styles.footerTop}>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>D</div>
+            <div style={styles.logoText}>DayTips</div>
+          </div>
+          <div style={styles.footerLinks}>
+            <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
+            <Link href="/responsible-gambling" style={styles.footerLink}>Responsible Gambling</Link>
+          </div>
+        </div>
+
+        <p style={styles.footerNotice}>
+          DayTips provides football predictions and analysis for informational and entertainment purposes only.
+          We do not accept bets or wagers. Tips are not guaranteed and should never be treated as financial advice.
+          You must be 18 or older to use this service. If you choose to bet with a licensed operator based on
+          information found here, please gamble responsibly.
+        </p>
+
+        <p style={styles.footerCopyright}>© {new Date().getFullYear()} DayTips. All rights reserved.</p>
+      </footer>
     </div>
   )
 }
@@ -268,4 +290,10 @@ const styles = {
   stampPending: { flex: '0 0 60px', width: 60, height: 60, borderRadius: '50%', border: '2px dashed rgba(212,160,23,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: '#D4A017' },
   stampVerdict: { flex: '0 0 60px', width: 60, height: 60, borderRadius: '50%', border: '3px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(-8deg)' },
   lock: { fontSize: 11, color: '#8B9A92', border: '1px solid rgba(247,245,239,0.12)', padding: '6px 10px', borderRadius: 14, whiteSpace: 'nowrap' },
+  footer: { maxWidth: 900, margin: '40px auto 0', padding: '32px 24px 48px', borderTop: '1px solid rgba(247,245,239,0.12)' },
+  footerTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 },
+  footerLinks: { display: 'flex', gap: 20, flexWrap: 'wrap' },
+  footerLink: { color: '#8B9A92', textDecoration: 'none', fontSize: 13, fontWeight: 500 },
+  footerNotice: { color: '#8B9A92', fontSize: 12, lineHeight: 1.6, marginTop: 20, maxWidth: 640 },
+  footerCopyright: { color: '#8B9A9299', fontSize: 11, marginTop: 16 },
 }
