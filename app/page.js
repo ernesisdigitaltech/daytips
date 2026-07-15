@@ -231,10 +231,6 @@ export default function HomePage() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
-          <div style={styles.logo}>
-            <div style={styles.logoMark}>D</div>
-            <div style={styles.logoText}>DayTips</div>
-          </div>
           <div style={styles.footerLinks}>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
             <Link href="/responsible-gambling" style={styles.footerLink}>Responsible Gambling</Link>
