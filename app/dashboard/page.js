@@ -1,23 +1,53 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
+import sd from '@/app/styles/scoutsDossier.module.css'
 
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState(null)
   const [coins, setCoins] = useState(null)
+  const [displayCoins, setDisplayCoins] = useState(0)
   const [lastClaim, setLastClaim] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [fullName, setFullName] = useState(null)
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState(false)
   const [message, setMessage] = useState('')
+  const [pulse, setPulse] = useState(false)
+  const firstLoad = useRef(true)
 
   useEffect(() => {
     loadProfile()
   }, [])
+
+  // Animate the coin number counting up whenever `coins` changes
+  useEffect(() => {
+    if (coins === null) return
+
+    if (firstLoad.current) {
+      // count up from 0 on first load
+      firstLoad.current = false
+      const duration = 700
+      const start = performance.now()
+      function tick(now) {
+        const progress = Math.min((now - start) / duration, 1)
+        const eased = 1 - Math.pow(1 - progress, 3)
+        setDisplayCoins(Math.round(eased * coins))
+        if (progress < 1) requestAnimationFrame(tick)
+      }
+      requestAnimationFrame(tick)
+    } else {
+      // just pulse on subsequent changes (e.g. after claiming)
+      setDisplayCoins(coins)
+      setPulse(true)
+      const t = setTimeout(() => setPulse(false), 500)
+      return () => clearTimeout(t)
+    }
+  }, [coins])
 
   async function loadProfile() {
     setLoading(true)
@@ -32,7 +62,7 @@ export default function DashboardPage() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('coins, last_daily_claim, is_admin')
+      .select('coins, last_daily_claim, is_admin, full_name')
       .eq('id', currentUser.id)
       .single()
 
@@ -40,6 +70,7 @@ export default function DashboardPage() {
       setCoins(profile.coins)
       setLastClaim(profile.last_daily_claim)
       setIsAdmin(!!profile.is_admin)
+      setFullName(profile.full_name)
     }
 
     setLoading(false)
@@ -76,78 +107,66 @@ export default function DashboardPage() {
   }
 
   if (loading) {
-    return <div style={styles.body}><p style={{ padding: 24, color: '#8B9A92' }}>Loading...</p></div>
+    return (
+      <div className={sd.page} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p className={sd.eyebrow}>Loading…</p>
+      </div>
+    )
   }
 
   return (
-    <div style={styles.body}>
-      <header style={styles.header}>
-        <Link href="/" style={styles.back}>← DayTips</Link>
+    <div className={sd.page}>
+      <header style={{ padding: '20px 24px', borderBottom: '1px solid rgba(247,245,239,0.12)' }}>
+        <Link href="/" className={sd.linkGold} style={{ color: '#F7F5EF' }}>← DayTips</Link>
       </header>
 
-      <main style={styles.main}>
-        <h1 style={styles.h1}>Your Dashboard</h1>
-        <p style={{ color: '#8B9A92', fontSize: 14, marginBottom: 32 }}>{user.email}</p>
+      <main style={{ maxWidth: 500, margin: '0 auto', padding: '48px 24px 80px' }} className={sd.stagger}>
+        <div>
+          <p className={sd.eyebrow}>Manager's Desk</p>
+          <h1 className={sd.h1}>{fullName ? `Hey, ${fullName.split(' ')[0]}` : 'Your Dashboard'}</h1>
+          <p style={{ color: '#F7F5EF88', fontSize: 14, marginBottom: 8 }}>{user.email}</p>
+        </div>
 
-        <div style={styles.coinCard}>
-          <div style={{ fontSize: 12, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-            Coin Balance
+        <div className={sd.card} style={{ textAlign: 'center', marginTop: 24 }}>
+          <div className={sd.eyebrow}>Coin Balance</div>
+
+          <div className={sd.stampRing}>
+            <div className={sd.stampRingInner}>
+              <span className={`${sd.coinNumber} ${pulse ? sd.pulse : ''}`}>{displayCoins}</span>
+            </div>
           </div>
-          <div style={styles.coinNumber}>{coins}</div>
 
           <button
             onClick={handleClaim}
             disabled={claiming || alreadyClaimedToday}
-            style={{
-              ...styles.claimBtn,
-              opacity: alreadyClaimedToday ? 0.4 : 1,
-              cursor: alreadyClaimedToday ? 'not-allowed' : 'pointer',
-            }}
+            className={sd.btnPrimary}
           >
             {alreadyClaimedToday
               ? 'Daily coins already claimed ✓'
               : claiming
-              ? 'Claiming...'
+              ? 'Claiming…'
               : 'Claim your 5 free daily coins'}
           </button>
 
-          {message && <p style={{ fontSize: 13, marginTop: 12, color: '#D4A017' }}>{message}</p>}
+          {message && <p className={sd.message}>{message}</p>}
         </div>
 
-        <div style={styles.linksRow}>
-          <Link href="/subscribe" style={styles.linkBtn}>Buy more coins →</Link>
-          <button onClick={handleLogout} style={styles.logoutBtn}>Log out</button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 }}>
+          <Link href="/subscribe" className={sd.linkGold}>Buy more coins →</Link>
+          <button onClick={handleLogout} className={sd.btnGhost}>Log out</button>
         </div>
 
         {isAdmin && (
-          <div style={styles.adminCard}>
-            <div style={styles.adminLabel}>Admin Panel</div>
-            <div style={styles.adminLinks}>
-              <Link href="/admin/overview" style={styles.adminLink}>Overview</Link>
-              <Link href="/admin/add-prediction" style={styles.adminLink}>Add Prediction</Link>
-              <Link href="/admin/manage-predictions" style={styles.adminLink}>Manage Predictions</Link>
+          <div className={sd.adminPanel}>
+            <div className={sd.adminLabel}>Admin Panel</div>
+            <div className={sd.adminLinks}>
+              <Link href="/admin/overview" className={sd.adminLink}>Overview</Link>
+              <Link href="/admin/add-prediction" className={sd.adminLink}>Add Prediction</Link>
+              <Link href="/admin/manage-predictions" className={sd.adminLink}>Manage Predictions</Link>
             </div>
           </div>
         )}
       </main>
     </div>
   )
-}
-
-const styles = {
-  body: { minHeight: '100vh', background: '#0E1912', color: '#F7F5EF', fontFamily: 'sans-serif' },
-  header: { padding: '20px 24px', borderBottom: '1px solid rgba(247,245,239,0.12)' },
-  back: { color: '#F7F5EF', textDecoration: 'none', fontWeight: 700 },
-  main: { maxWidth: 500, margin: '0 auto', padding: '48px 24px 80px' },
-  h1: { fontSize: 28, fontWeight: 700, margin: '0 0 4px' },
-  coinCard: { background: 'rgba(247,245,239,0.03)', border: '1px solid rgba(247,245,239,0.1)', borderRadius: 12, padding: 28, textAlign: 'center' },
-  coinNumber: { fontSize: 48, fontWeight: 800, color: '#D4A017', margin: '8px 0 20px', fontFamily: 'monospace' },
-  claimBtn: { width: '100%', padding: 14, background: '#3B7A57', color: '#F7F5EF', border: 'none', borderRadius: 20, fontWeight: 700, fontSize: 14 },
-  linksRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 },
-  linkBtn: { color: '#D4A017', textDecoration: 'none', fontWeight: 600, fontSize: 14 },
-  logoutBtn: { background: 'transparent', border: '1px solid rgba(247,245,239,0.2)', color: '#F7F5EF', padding: '8px 16px', borderRadius: 16, fontSize: 13, cursor: 'pointer' },
-  adminCard: { marginTop: 32, background: 'rgba(212,160,23,0.06)', border: '1px solid rgba(212,160,23,0.35)', borderRadius: 12, padding: 20 },
-  adminLabel: { fontSize: 12, color: '#D4A017', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 12 },
-  adminLinks: { display: 'flex', flexDirection: 'column', gap: 10 },
-  adminLink: { color: '#F7F5EF', textDecoration: 'none', fontSize: 14, fontWeight: 600, padding: '8px 12px', background: 'rgba(247,245,239,0.04)', borderRadius: 8, border: '1px solid rgba(247,245,239,0.1)' },
 }

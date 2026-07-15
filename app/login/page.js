@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
+import sd from '@/app/styles/scoutsDossier.module.css'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -31,40 +33,59 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={{ maxWidth: 380, margin: '80px auto', padding: 24 }}>
-      <h1>Log in to DayTips</h1>
+    <div className={sd.authPage}>
+      <div className={sd.authCard}>
+        <div className={sd.authLogo}>
+          <div className={sd.authLogoMark}>D</div>
+          <div className={sd.authLogoText}>DayTips</div>
+        </div>
 
-      <form onSubmit={handleLogin}>
-        <input
-          type="email"
-          placeholder="Email address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ width: '100%', padding: 10, marginTop: 12 }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{ width: '100%', padding: 10, marginTop: 12 }}
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          style={{ width: '100%', padding: 12, marginTop: 16 }}
-        >
-          {loading ? 'Logging in...' : 'Log in'}
-        </button>
-      </form>
+        <h1 className={sd.authTitle}>Welcome back</h1>
+        <p className={sd.authSubtitle}>Log in to see today's verdicts.</p>
 
-      {message && <p style={{ marginTop: 16, fontSize: 14 }}>{message}</p>}
+        <form onSubmit={handleLogin}>
+          <div className={sd.field}>
+            <label className={sd.fieldLabel} htmlFor="email">Email address</label>
+            <input
+              id="email"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className={sd.input}
+            />
+          </div>
 
-      <p style={{ marginTop: 24, fontSize: 14 }}>
-        Don't have an account? <a href="/signup">Sign up</a>
-      </p>
+          <div className={sd.field}>
+            <label className={sd.fieldLabel} htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className={sd.input}
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className={sd.btnPrimary}
+            style={{ marginTop: '1.5rem' }}
+          >
+            {loading ? 'Logging in…' : 'Log in'}
+          </button>
+        </form>
+
+        {message && <p className={sd.authError}>{message}</p>}
+
+        <p className={sd.authFooter}>
+          Don't have an account? <Link href="/signup" className={sd.linkGold}>Sign up</Link>
+        </p>
+      </div>
     </div>
   )
 }
