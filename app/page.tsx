@@ -4,7 +4,7 @@ import { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 
-function formatDateKey(date) {
+function formatDateKey(date: Date): string {
   return date.toISOString().split('T')[0]
 }
 
