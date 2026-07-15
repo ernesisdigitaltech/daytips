@@ -16,6 +16,9 @@ export default function HomePage() {
   const [weekOffset, setWeekOffset] = useState(0) // shifts the 7-day window by whole weeks
   const [selectedDateKey, setSelectedDateKey] = useState(formatDateKey(new Date()))
 
+  const [user, setUser] = useState(null)
+  const [coins, setCoins] = useState(null)
+
   useEffect(() => {
     loadFixtures()
   }, [])
@@ -37,13 +40,24 @@ export default function HomePage() {
       return
     }
 
-    const user = userResult.data.user
-    if (user) {
-      const { data: unlocks } = await supabase
-        .from('unlocked_fixtures')
-        .select('fixture_id')
-        .eq('user_id', user.id)
+    const currentUser = userResult.data.user
+    if (currentUser) {
+      setUser(currentUser)
+
+      const [{ data: unlocks }, { data: profile }] = await Promise.all([
+        supabase
+          .from('unlocked_fixtures')
+          .select('fixture_id')
+          .eq('user_id', currentUser.id),
+        supabase
+          .from('profiles')
+          .select('coins')
+          .eq('id', currentUser.id)
+          .single(),
+      ])
+
       if (unlocks) setUnlockedIds(new Set(unlocks.map((u) => u.fixture_id)))
+      if (profile) setCoins(profile.coins)
     }
 
     setAllFixtures(fixturesResult.data)
@@ -93,8 +107,21 @@ export default function HomePage() {
           <div style={styles.logoMark}>D</div>
           <div style={styles.logoText}>DayTips</div>
         </div>
-        <Link href="/login" style={styles.loginBtn}>Log in</Link>
+        {user ? (
+          <Link href="/dashboard" style={styles.dashboardBtn}>My Dashboard</Link>
+        ) : (
+          <Link href="/login" style={styles.loginBtn}>Log in</Link>
+        )}
       </header>
+
+      {user && (
+        <Link href="/dashboard" style={styles.welcomeBarLink}>
+          <div style={styles.welcomeBar}>
+            <span>Welcome back{coins !== null ? ` — ${coins} coin${coins === 1 ? '' : 's'} available` : ''}</span>
+            <span style={styles.welcomeBarArrow}>Go to dashboard →</span>
+          </div>
+        </Link>
+      )}
 
       <main style={styles.main}>
         <section style={styles.hero}>
@@ -212,6 +239,10 @@ const styles = {
   logoMark: { width: 34, height: 34, borderRadius: '50%', border: '2px solid #D4A017', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#D4A017' },
   logoText: { fontWeight: 800, fontSize: 22 },
   loginBtn: { background: '#D4A017', color: '#0E1912', border: 'none', padding: '9px 16px', borderRadius: 20, fontWeight: 600, fontSize: 13, textDecoration: 'none' },
+  dashboardBtn: { background: '#3B7A57', color: '#F7F5EF', border: 'none', padding: '9px 16px', borderRadius: 20, fontWeight: 600, fontSize: 13, textDecoration: 'none' },
+  welcomeBarLink: { textDecoration: 'none', color: 'inherit', display: 'block' },
+  welcomeBar: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', padding: '10px 24px', background: 'rgba(212,160,23,0.1)', borderBottom: '1px solid rgba(212,160,23,0.3)', fontSize: 13, color: '#F7F5EF' },
+  welcomeBarArrow: { color: '#D4A017', fontWeight: 600 },
   main: { maxWidth: 900, margin: '0 auto', padding: '0 24px 80px' },
   hero: { padding: '56px 0 30px' },
   eyebrow: { fontSize: 12, letterSpacing: '0.15em', color: '#D4A017', textTransform: 'uppercase' },
