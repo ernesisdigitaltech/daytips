@@ -1,65 +1,240 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState, useEffect, useMemo } from 'react'
+import Link from 'next/link'
+import { supabase } from '@/lib/supabaseClient'
+
+function formatDateKey(date) {
+  return date.toISOString().split('T')[0]
+}
+
+export default function HomePage() {
+  const [allFixtures, setAllFixtures] = useState([])
+  const [unlockedIds, setUnlockedIds] = useState(new Set())
+  const [loading, setLoading] = useState(true)
+
+  const [weekOffset, setWeekOffset] = useState(0) // shifts the 7-day window by whole weeks
+  const [selectedDateKey, setSelectedDateKey] = useState(formatDateKey(new Date()))
+
+  useEffect(() => {
+    loadFixtures()
+  }, [])
+
+  async function loadFixtures() {
+    setLoading(true)
+
+    const [fixturesResult, userResult] = await Promise.all([
+      supabase
+        .from('fixtures')
+        .select('*, leagues(country, name)')
+        .order('kickoff_time', { ascending: true }),
+      supabase.auth.getUser(),
+    ])
+
+    if (fixturesResult.error) {
+      console.error(fixturesResult.error)
+      setLoading(false)
+      return
+    }
+
+    const user = userResult.data.user
+    if (user) {
+      const { data: unlocks } = await supabase
+        .from('unlocked_fixtures')
+        .select('fixture_id')
+        .eq('user_id', user.id)
+      if (unlocks) setUnlockedIds(new Set(unlocks.map((u) => u.fixture_id)))
+    }
+
+    setAllFixtures(fixturesResult.data)
+    setLoading(false)
+  }
+
+  // Build the 7 visible calendar days based on weekOffset
+  const visibleDays = useMemo(() => {
+    const days = []
+    const base = new Date()
+    base.setDate(base.getDate() + weekOffset * 7 - 3) // center today when offset is 0
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(base)
+      d.setDate(base.getDate() + i)
+      days.push(d)
+    }
+    return days
+  }, [weekOffset])
+
+  const todayKey = formatDateKey(new Date())
+
+  // Group the fixtures for the selected day only, by league
+  const fixturesByLeague = useMemo(() => {
+    const dayFixtures = allFixtures.filter(
+      (fx) => formatDateKey(new Date(fx.kickoff_time)) === selectedDateKey
+    )
+
+    const groups = {}
+    for (const fixture of dayFixtures) {
+      const key = `${fixture.leagues.country}|${fixture.leagues.name}`
+      if (!groups[key]) {
+        groups[key] = { country: fixture.leagues.country, name: fixture.leagues.name, fixtures: [] }
+      }
+      groups[key].fixtures.push(fixture)
+    }
+
+    return Object.values(groups).sort((a, b) => {
+      if (a.country !== b.country) return a.country.localeCompare(b.country)
+      return a.name.localeCompare(b.name)
+    })
+  }, [allFixtures, selectedDateKey])
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+    <div style={styles.body}>
+      <header style={styles.header}>
+        <div style={styles.logo}>
+          <div style={styles.logoMark}>D</div>
+          <div style={styles.logoText}>DayTips</div>
+        </div>
+        <Link href="/login" style={styles.loginBtn}>Log in</Link>
+      </header>
+
+      <main style={styles.main}>
+        <section style={styles.hero}>
+          <span style={styles.eyebrow}>Matchday Dossier</span>
+          <h1 style={styles.h1}>Today's<br />Verdicts.</h1>
+          <p style={styles.heroText}>
+            Every fixture analysed, rated, and stamped before kickoff.
           </p>
+        </section>
+
+        {/* CALENDAR STRIP */}
+        <div style={styles.calendarRow}>
+          <button onClick={() => setWeekOffset(weekOffset - 1)} style={styles.calArrow}>‹</button>
+          <div style={styles.calendar}>
+            {visibleDays.map((d) => {
+              const key = formatDateKey(d)
+              const isSelected = key === selectedDateKey
+              const isToday = key === todayKey
+              return (
+                <button
+                  key={key}
+                  onClick={() => setSelectedDateKey(key)}
+                  style={{
+                    ...styles.calDay,
+                    background: isSelected ? '#3B7A57' : 'transparent',
+                    borderColor: isToday ? '#D4A017' : 'rgba(247,245,239,0.12)',
+                  }}
+                >
+                  <div style={styles.calDow}>{d.toLocaleDateString([], { weekday: 'short' })}</div>
+                  <div style={styles.calNum}>{d.getDate()}</div>
+                </button>
+              )
+            })}
+          </div>
+          <button onClick={() => setWeekOffset(weekOffset + 1)} style={styles.calArrow}>›</button>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+
+        {loading && <p style={{ color: '#8B9A92', marginTop: 24 }}>Loading fixtures...</p>}
+
+        {!loading && fixturesByLeague.length === 0 && (
+          <p style={{ color: '#8B9A92', marginTop: 24 }}>
+            No fixtures for {new Date(selectedDateKey).toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}.
+          </p>
+        )}
+
+        {!loading && fixturesByLeague.map((league) => (
+          <div key={league.country + league.name} style={{ marginTop: 40 }}>
+            <div style={styles.leagueHeader}>
+              <span style={styles.leagueCountry}>{league.country}</span>
+              <span style={styles.leagueName}>{league.name}</span>
+            </div>
+
+            {league.fixtures.map((fx) => {
+              const isLocked = fx.is_premium && !unlockedIds.has(fx.id)
+
+              return (
+                <Link key={fx.id} href={`/fixtures/${fx.id}`} style={styles.fixtureLink}>
+                  <div style={styles.fixture}>
+                    <div style={styles.fxTime}>
+                      {new Date(fx.kickoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div>
+                        <span style={styles.teamName}>{fx.home_team}</span>
+                        <span style={styles.vs}> vs </span>
+                        <span style={styles.teamName}>{fx.away_team}</span>
+                      </div>
+
+                      {isLocked ? (
+                        <div style={styles.lockedPreview}>🔒 Tip and analysis locked — unlock for 2 coins</div>
+                      ) : (
+                        <>
+                          <div style={styles.tip}>Tip: {fx.tip}</div>
+                          <div style={styles.analysis}>{fx.analysis}</div>
+                        </>
+                      )}
+                    </div>
+
+                    {fx.result === 'pending' ? (
+                      <div style={styles.stampPending}>
+                        <div style={{ fontSize: 15, fontWeight: 600 }}>{fx.confidence_percent}%</div>
+                        <div style={{ fontSize: 7, color: '#8B9A92' }}>CONF.</div>
+                      </div>
+                    ) : (
+                      <div style={{
+                        ...styles.stampVerdict,
+                        borderColor: fx.result === 'correct' ? '#D4A017' : '#A63A2E',
+                        color: fx.result === 'correct' ? '#D4A017' : '#A63A2E',
+                      }}>
+                        <div style={{ fontWeight: 800, fontSize: 11 }}>
+                          {fx.result === 'correct' ? 'Correct' : 'Wrong'}
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={styles.lock}>
+                      {fx.is_premium ? (isLocked ? '🔒 2' : '✓ Unlocked') : 'Free'}
+                    </div>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        ))}
       </main>
     </div>
-  );
+  )
+}
+
+const styles = {
+  body: { minHeight: '100vh', background: '#0E1912', color: '#F7F5EF', fontFamily: 'sans-serif' },
+  header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(247,245,239,0.12)' },
+  logo: { display: 'flex', alignItems: 'center', gap: 10 },
+  logoMark: { width: 34, height: 34, borderRadius: '50%', border: '2px solid #D4A017', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#D4A017' },
+  logoText: { fontWeight: 800, fontSize: 22 },
+  loginBtn: { background: '#D4A017', color: '#0E1912', border: 'none', padding: '9px 16px', borderRadius: 20, fontWeight: 600, fontSize: 13, textDecoration: 'none' },
+  main: { maxWidth: 900, margin: '0 auto', padding: '0 24px 80px' },
+  hero: { padding: '56px 0 30px' },
+  eyebrow: { fontSize: 12, letterSpacing: '0.15em', color: '#D4A017', textTransform: 'uppercase' },
+  h1: { fontWeight: 800, fontSize: 52, lineHeight: 0.95, margin: '14px 0' },
+  heroText: { color: '#8B9A92', fontSize: 15 },
+  calendarRow: { display: 'flex', alignItems: 'center', gap: 8, borderTop: '1px solid rgba(247,245,239,0.12)', borderBottom: '1px solid rgba(247,245,239,0.12)', padding: '16px 0' },
+  calArrow: { background: 'transparent', border: 'none', color: '#8B9A92', fontSize: 20, cursor: 'pointer', padding: '0 4px' },
+  calendar: { display: 'flex', gap: 8, overflowX: 'auto', flex: 1 },
+  calDay: { flex: '0 0 auto', width: 52, textAlign: 'center', padding: '8px 0', borderRadius: 10, border: '1px solid', cursor: 'pointer', color: '#F7F5EF' },
+  calDow: { fontSize: 10, color: '#8B9A92', textTransform: 'uppercase' },
+  calNum: { fontSize: 15, marginTop: 3 },
+  leagueHeader: { display: 'flex', alignItems: 'baseline', gap: 12, paddingBottom: 10, borderBottom: '2px solid #3B7A57' },
+  leagueCountry: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.1em' },
+  leagueName: { fontWeight: 700, fontSize: 22 },
+  fixtureLink: { textDecoration: 'none', color: 'inherit' },
+  fixture: { display: 'flex', alignItems: 'center', gap: 16, padding: '18px 4px', borderBottom: '1px solid rgba(247,245,239,0.12)' },
+  fxTime: { fontSize: 12, color: '#8B9A92', width: 44, flex: '0 0 44px' },
+  teamName: { fontSize: 14, fontWeight: 500 },
+  vs: { color: '#8B9A92', fontSize: 11 },
+  tip: { fontSize: 11, color: '#D4A017', textTransform: 'uppercase', marginTop: 4 },
+  analysis: { fontSize: 12.5, color: '#8B9A92', marginTop: 6, maxWidth: 480 },
+  lockedPreview: { fontSize: 12.5, color: '#D4A017', marginTop: 6, fontStyle: 'italic' },
+  stampPending: { flex: '0 0 60px', width: 60, height: 60, borderRadius: '50%', border: '2px dashed rgba(212,160,23,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: '#D4A017' },
+  stampVerdict: { flex: '0 0 60px', width: 60, height: 60, borderRadius: '50%', border: '3px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(-8deg)' },
+  lock: { fontSize: 11, color: '#8B9A92', border: '1px solid rgba(247,245,239,0.12)', padding: '6px 10px', borderRadius: 14, whiteSpace: 'nowrap' },
 }
