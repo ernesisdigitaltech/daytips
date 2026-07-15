@@ -36,7 +36,7 @@ export default function LoginPage() {
     <div className={sd.authPage}>
       <div className={sd.authCard}>
         <div className={sd.authLogo}>
-          <div className={sd.authLogoMark}>D</div>
+          <img src="/logo.png" alt="DayTips" className={sd.authLogoMark} />
           <div className={sd.authLogoText}>DayTips</div>
         </div>
 

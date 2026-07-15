@@ -104,7 +104,7 @@ export default function HomePage() {
     <div style={styles.body}>
       <header style={styles.header}>
         <div style={styles.logo}>
-          <div style={styles.logoMark}>D</div>
+          <img src="/logo.png" alt="DayTips" style={styles.logoMark} />
           <div style={styles.logoText}>DayTips</div>
         </div>
         {user ? (
@@ -258,7 +258,7 @@ const styles = {
   body: { minHeight: '100vh', background: '#0E1912', color: '#F7F5EF', fontFamily: 'sans-serif' },
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(247,245,239,0.12)' },
   logo: { display: 'flex', alignItems: 'center', gap: 10 },
-  logoMark: { width: 34, height: 34, borderRadius: '50%', border: '2px solid #D4A017', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#D4A017' },
+  logoMark: { width: 34, height: 34, borderRadius: '50%', objectFit: 'cover' },
   logoText: { fontWeight: 800, fontSize: 22 },
   loginBtn: { background: '#D4A017', color: '#0E1912', border: 'none', padding: '9px 16px', borderRadius: 20, fontWeight: 600, fontSize: 13, textDecoration: 'none' },
   dashboardBtn: { background: '#3B7A57', color: '#F7F5EF', border: 'none', padding: '9px 16px', borderRadius: 20, fontWeight: 600, fontSize: 13, textDecoration: 'none' },
