@@ -10,6 +10,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState(null)
   const [coins, setCoins] = useState(null)
   const [lastClaim, setLastClaim] = useState(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState(false)
   const [message, setMessage] = useState('')
@@ -31,13 +32,14 @@ export default function DashboardPage() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('coins, last_daily_claim')
+      .select('coins, last_daily_claim, is_admin')
       .eq('id', currentUser.id)
       .single()
 
     if (profile) {
       setCoins(profile.coins)
       setLastClaim(profile.last_daily_claim)
+      setIsAdmin(!!profile.is_admin)
     }
 
     setLoading(false)
@@ -116,6 +118,17 @@ export default function DashboardPage() {
           <Link href="/subscribe" style={styles.linkBtn}>Buy more coins →</Link>
           <button onClick={handleLogout} style={styles.logoutBtn}>Log out</button>
         </div>
+
+        {isAdmin && (
+          <div style={styles.adminCard}>
+            <div style={styles.adminLabel}>Admin Panel</div>
+            <div style={styles.adminLinks}>
+              <Link href="/admin/overview" style={styles.adminLink}>Overview</Link>
+              <Link href="/admin/add-prediction" style={styles.adminLink}>Add Prediction</Link>
+              <Link href="/admin/manage-predictions" style={styles.adminLink}>Manage Predictions</Link>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )
@@ -133,4 +146,8 @@ const styles = {
   linksRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 24 },
   linkBtn: { color: '#D4A017', textDecoration: 'none', fontWeight: 600, fontSize: 14 },
   logoutBtn: { background: 'transparent', border: '1px solid rgba(247,245,239,0.2)', color: '#F7F5EF', padding: '8px 16px', borderRadius: 16, fontSize: 13, cursor: 'pointer' },
+  adminCard: { marginTop: 32, background: 'rgba(212,160,23,0.06)', border: '1px solid rgba(212,160,23,0.35)', borderRadius: 12, padding: 20 },
+  adminLabel: { fontSize: 12, color: '#D4A017', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 700, marginBottom: 12 },
+  adminLinks: { display: 'flex', flexDirection: 'column', gap: 10 },
+  adminLink: { color: '#F7F5EF', textDecoration: 'none', fontSize: 14, fontWeight: 600, padding: '8px 12px', background: 'rgba(247,245,239,0.04)', borderRadius: 8, border: '1px solid rgba(247,245,239,0.1)' },
 }
