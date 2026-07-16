@@ -37,13 +37,24 @@ const NAV_LINKS = [
   },
   {
     href: '/admin/manage-subscribers',
-    label: 'Subscribers',
+    label: 'Subs',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
         <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  },
+  {
+    href: '/admin/purchase-claims',
+    label: 'Claims',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4" />
+        <path d="M4 6v12c0 1.1.9 2 2 2h14v-4" />
+        <path d="M18 12a2 2 0 0 0 0 4h4v-4Z" />
       </svg>
     ),
   },
@@ -55,6 +66,7 @@ const TITLES = {
   '/admin/add-prediction': 'Add Prediction',
   '/admin/manage-predictions': 'Manage Predictions',
   '/admin/manage-subscribers': 'Manage Subscribers',
+  '/admin/purchase-claims': 'Purchase Claims',
 };
 
 export default function AdminLayout({ children }) {
@@ -62,6 +74,36 @@ export default function AdminLayout({ children }) {
   const pathname = usePathname();
   const [checking, setChecking] = useState(true);
   const [authorized, setAuthorized] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
+
+  useEffect(() => {
+    checkAdmin();
+  }, []);
+
+  useEffect(() => {
+    if (!authorized) return;
+    loadPendingCount();
+
+    const channel = supabase
+      .channel('purchase_claims_badge')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'purchase_claims' }, () => {
+        loadPendingCount();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authorized]);
+
+  async function loadPendingCount() {
+    const { count } = await supabase
+      .from('purchase_claims')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'pending');
+    setPendingCount(count || 0);
+  }
 
   useEffect(() => {
     checkAdmin();
@@ -120,13 +162,19 @@ export default function AdminLayout({ children }) {
         <nav className={sd.tabBar}>
           {NAV_LINKS.map(link => {
             const isActive = pathname === link.href;
+            const showBadge = link.href === '/admin/purchase-claims' && pendingCount > 0;
             return (
               <a
                 key={link.href}
                 href={link.href}
                 className={`${sd.tabItem} ${isActive ? sd.tabItemActive : ''}`}
               >
-                <span className={sd.tabIconRing}>{link.icon}</span>
+                <span className={sd.tabIconRing} style={{ position: 'relative' }}>
+                  {link.icon}
+                  {showBadge && (
+                    <span style={badgeStyle}>{pendingCount > 9 ? '9+' : pendingCount}</span>
+                  )}
+                </span>
                 <span className={sd.tabLabel}>{link.label}</span>
               </a>
             );
@@ -136,3 +184,22 @@ export default function AdminLayout({ children }) {
     </div>
   );
 }
+
+const badgeStyle = {
+  position: 'absolute',
+  top: -4,
+  right: -4,
+  minWidth: 16,
+  height: 16,
+  padding: '0 3px',
+  borderRadius: 8,
+  background: '#A63A2E',
+  color: '#F7F5EF',
+  fontSize: 9,
+  fontWeight: 800,
+  display: 'flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontFamily: 'Inter, sans-serif',
+  boxShadow: '0 0 0 2px #16241a',
+};

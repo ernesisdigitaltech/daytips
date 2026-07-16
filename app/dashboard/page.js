@@ -208,6 +208,7 @@ function DashboardPageInner() {
               <Link href="/admin/add-prediction" className={sd.adminLink}>Add Prediction</Link>
               <Link href="/admin/manage-predictions" className={sd.adminLink}>Manage Predictions</Link>
               <Link href="/admin/manage-subscribers" className={sd.adminLink}>Manage Subscribers</Link>
+              <Link href="/admin/purchase-claims" className={sd.adminLink}>Purchase Claims</Link>
             </div>
           </div>
         )}
