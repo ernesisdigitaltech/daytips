@@ -1,11 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 
-// TODO: Replace these with your real Flutterwave payment links once created
+const PRO_PLANS = [
+  { id: 'weekly', label: 'Weekly', price: '₦3,000', period: '/ week', link: 'https://flutterwave.com/pay/daytips-weekly-pro' },
+  { id: 'monthly', label: 'Monthly', price: '₦10,000', period: '/ month', link: 'https://flutterwave.com/pay/daytips-monthly-pro', badge: 'Best value' },
+]
+
+// TODO: Replace these with your real coin-pack Flutterwave payment links
 const COIN_PACKAGES = [
   { coins: 20, price: '$2', link: 'https://flutterwave.com/pay/YOUR-LINK-20' },
   { coins: 50, price: '$5', link: 'https://flutterwave.com/pay/YOUR-LINK-50' },
@@ -18,14 +23,27 @@ const COIN_PACKAGES = [
 const CRYPTO_ADDRESS = 'your-wallet-address-here'
 
 export default function SubscribePage() {
+  return (
+    <Suspense fallback={null}>
+      <SubscribePageInner />
+    </Suspense>
+  )
+}
+
+function SubscribePageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [user, setUser] = useState(null)
+  const [subscriptionTier, setSubscriptionTier] = useState('free')
+  const [subscriptionExpires, setSubscriptionExpires] = useState(null)
   const [loading, setLoading] = useState(true)
 
   const [coinsClaimed, setCoinsClaimed] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('flutterwave')
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
+
+  const upgradeFailed = searchParams.get('upgrade') === 'failed'
 
   useEffect(() => {
     checkUser()
@@ -38,8 +56,22 @@ export default function SubscribePage() {
       return
     }
     setUser(currentUser)
+
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('subscription_tier, subscription_expires_at')
+      .eq('id', currentUser.id)
+      .single()
+
+    if (profile) {
+      setSubscriptionTier(profile.subscription_tier)
+      setSubscriptionExpires(profile.subscription_expires_at)
+    }
+
     setLoading(false)
   }
+
+  const isPro = subscriptionTier === 'pro' && subscriptionExpires && new Date(subscriptionExpires) > new Date()
 
   async function handleSubmitClaim(e) {
     e.preventDefault()
@@ -80,9 +112,48 @@ export default function SubscribePage() {
       </header>
 
       <main style={styles.main}>
-        <h1 style={styles.h1}>Buy Coins</h1>
-        <p style={{ color: '#8B9A92', fontSize: 14, marginBottom: 32 }}>
-          Pick a package, pay via Flutterwave or crypto, then tell us what you paid below.
+        <h1 style={styles.h1}>Go Pro</h1>
+        <p style={{ color: '#8B9A92', fontSize: 14, marginBottom: 28 }}>
+          Unlimited access to every premium fixture, no coins needed.
+        </p>
+
+        {upgradeFailed && (
+          <div style={styles.errorBanner}>
+            Something went wrong verifying your last payment. If you were charged, it usually resolves within a
+            few minutes — otherwise contact support.
+          </div>
+        )}
+
+        {isPro ? (
+          <div style={styles.proActiveCard}>
+            <div style={styles.proActiveBadge}>✓ Pro Active</div>
+            <p style={styles.proActiveText}>
+              You have unlimited access to all premium fixtures until{' '}
+              {new Date(subscriptionExpires).toLocaleDateString([], { day: '2-digit', month: 'long', year: 'numeric' })}.
+            </p>
+          </div>
+        ) : (
+          <div style={styles.planGrid}>
+            {PRO_PLANS.map((plan) => (
+              <a key={plan.id} href={plan.link} style={styles.planCard}>
+                {plan.badge && <div style={styles.planBadge}>{plan.badge}</div>}
+                <div style={styles.planLabel}>{plan.label}</div>
+                <div style={styles.planPrice}>
+                  {plan.price} <span style={styles.planPeriod}>{plan.period}</span>
+                </div>
+                <div style={styles.planCta}>Subscribe →</div>
+              </a>
+            ))}
+          </div>
+        )}
+
+        <div style={styles.divider}>
+          <span style={styles.dividerText}>or, no commitment</span>
+        </div>
+
+        <h2 style={styles.h2}>Buy Coins</h2>
+        <p style={{ color: '#8B9A92', fontSize: 13, marginBottom: 20 }}>
+          Prefer to pay as you go? Buy a coin pack and spend it on individual premium picks.
         </p>
 
         {/* COIN PACKAGES */}
@@ -107,9 +178,9 @@ export default function SubscribePage() {
           </p>
         </div>
 
-        {/* PURCHASE CLAIM FORM */}
+        {/* PURCHASE CLAIM FORM (coins only — Pro upgrades are verified automatically) */}
         <div style={styles.claimBox}>
-          <h3 style={{ marginTop: 0, fontSize: 16 }}>Tell us what you paid</h3>
+          <h3 style={{ marginTop: 0, fontSize: 16 }}>Tell us what you paid for coins</h3>
           <form onSubmit={handleSubmitClaim}>
             <label style={styles.label}>Payment method</label>
             <select
@@ -148,6 +219,20 @@ const styles = {
   back: { color: '#F7F5EF', textDecoration: 'none', fontWeight: 700 },
   main: { maxWidth: 560, margin: '0 auto', padding: '48px 24px 80px' },
   h1: { fontSize: 28, fontWeight: 700, margin: '0 0 4px' },
+  h2: { fontSize: 18, fontWeight: 700, margin: '0 0 4px' },
+  errorBanner: { background: 'rgba(166,58,46,0.12)', border: '1px solid rgba(166,58,46,0.4)', borderRadius: 10, padding: 14, fontSize: 13, color: '#F7F5EF', marginBottom: 24 },
+  proActiveCard: { background: 'rgba(212,160,23,0.08)', border: '1px solid rgba(212,160,23,0.35)', borderRadius: 12, padding: 24, marginBottom: 36, textAlign: 'center' },
+  proActiveBadge: { display: 'inline-block', background: '#D4A017', color: '#0E1912', fontWeight: 800, fontSize: 12, padding: '4px 12px', borderRadius: 20, marginBottom: 10 },
+  proActiveText: { fontSize: 14, color: '#F7F5EF', margin: 0 },
+  planGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 14, marginBottom: 8 },
+  planCard: { position: 'relative', textDecoration: 'none', color: '#F7F5EF', background: 'rgba(212,160,23,0.06)', border: '1px solid rgba(212,160,23,0.3)', borderRadius: 14, padding: '22px 20px' },
+  planBadge: { position: 'absolute', top: -10, right: 16, background: '#D4A017', color: '#0E1912', fontSize: 10, fontWeight: 800, padding: '3px 10px', borderRadius: 12 },
+  planLabel: { fontSize: 12, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.06em' },
+  planPrice: { fontSize: 26, fontWeight: 800, color: '#D4A017', fontFamily: 'monospace', marginTop: 6 },
+  planPeriod: { fontSize: 13, color: '#8B9A92', fontFamily: 'sans-serif', fontWeight: 400 },
+  planCta: { marginTop: 14, fontSize: 13, fontWeight: 700, color: '#F7F5EF' },
+  divider: { display: 'flex', alignItems: 'center', margin: '36px 0 28px', gap: 12 },
+  dividerText: { fontSize: 11, color: '#8B9A9299', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' },
   packageGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(90px, 1fr))', gap: 10, marginBottom: 28 },
   packageCard: { textDecoration: 'none', color: '#F7F5EF', background: 'rgba(247,245,239,0.03)', border: '1px solid rgba(247,245,239,0.1)', borderRadius: 10, padding: '16px 8px', textAlign: 'center' },
   packageCoins: { fontSize: 22, fontWeight: 800, color: '#D4A017', fontFamily: 'monospace' },

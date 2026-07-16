@@ -13,6 +13,7 @@ export default function FixturePage() {
 
   const [user, setUser] = useState(null)
   const [coins, setCoins] = useState(null)
+  const [isPro, setIsPro] = useState(false)
   const [unlocked, setUnlocked] = useState(false)
   const [unlocking, setUnlocking] = useState(false)
   const [message, setMessage] = useState('')
@@ -45,9 +46,13 @@ export default function FixturePage() {
     setUser(currentUser)
 
     if (currentUser) {
-      // Profile (coins) and unlock status don't depend on each other either — fetch together
+      // Profile (coins + subscription) and unlock status don't depend on each other either — fetch together
       const [profileResult, unlockResult] = await Promise.all([
-        supabase.from('profiles').select('coins').eq('id', currentUser.id).single(),
+        supabase
+          .from('profiles')
+          .select('coins, subscription_tier, subscription_expires_at')
+          .eq('id', currentUser.id)
+          .single(),
         supabase
           .from('unlocked_fixtures')
           .select('*')
@@ -56,7 +61,14 @@ export default function FixturePage() {
           .maybeSingle(),
       ])
 
-      if (profileResult.data) setCoins(profileResult.data.coins)
+      if (profileResult.data) {
+        setCoins(profileResult.data.coins)
+        const proActive =
+          profileResult.data.subscription_tier === 'pro' &&
+          profileResult.data.subscription_expires_at &&
+          new Date(profileResult.data.subscription_expires_at) > new Date()
+        setIsPro(proActive)
+      }
       setUnlocked(!!unlockResult.data)
     }
 
@@ -102,14 +114,18 @@ export default function FixturePage() {
   }
 
   const kickoff = new Date(fixture.kickoff_time)
-  const isLocked = fixture.is_premium && !unlocked
+  // Pro subscribers see every fixture unlocked, regardless of coin-unlock history
+  const isLocked = fixture.is_premium && !unlocked && !isPro
 
   return (
     <div style={styles.body}>
       <header style={styles.header}>
         <Link href="/" style={styles.back}>← DayTips</Link>
-        {user && coins !== null && (
-          <span style={{ float: 'right', fontSize: 13, color: '#D4A017' }}>{coins} coins</span>
+        {user && (
+          <span style={{ float: 'right', fontSize: 13 }}>
+            {isPro && <span style={styles.proBadge}>✓ PRO</span>}
+            {coins !== null && <span style={{ color: '#D4A017' }}>{coins} coins</span>}
+          </span>
         )}
       </header>
 
@@ -159,7 +175,7 @@ export default function FixturePage() {
           <div style={styles.lockedBox}>
             <div style={{ fontSize: 28, marginBottom: 8 }}>🔒</div>
             <p style={{ color: '#8B9A92', fontSize: 14, marginBottom: 16 }}>
-              The tip and full analysis for this fixture are locked. Unlock for 2 coins to reveal them.
+              The tip and full analysis for this fixture are locked. Unlock for 2 coins, or go Pro for unlimited access.
             </p>
 
             {!user && (
@@ -167,9 +183,12 @@ export default function FixturePage() {
             )}
 
             {user && (
-              <button onClick={handleUnlock} disabled={unlocking} style={styles.unlockBtn}>
-                {unlocking ? 'Unlocking...' : 'Unlock for 2 coins'}
-              </button>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                <button onClick={handleUnlock} disabled={unlocking} style={styles.unlockBtn}>
+                  {unlocking ? 'Unlocking...' : 'Unlock for 2 coins'}
+                </button>
+                <Link href="/subscribe" style={styles.proBtn}>Go Pro instead →</Link>
+              </div>
             )}
 
             {message && <p style={{ color: '#A63A2E', fontSize: 13, marginTop: 12 }}>{message}</p>}
@@ -178,6 +197,9 @@ export default function FixturePage() {
           <div style={styles.analysisBox}>
             <h3 style={{ marginTop: 0, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#8B9A92' }}>
               Full Analysis
+              {fixture.is_premium && isPro && !unlocked && (
+                <span style={styles.unlockedViaPro}>— unlocked with Pro</span>
+              )}
             </h3>
             <p style={{ lineHeight: 1.7, fontSize: 15 }}>{fixture.analysis}</p>
           </div>
@@ -191,6 +213,7 @@ const styles = {
   body: { minHeight: '100vh', background: '#0E1912', color: '#F7F5EF', fontFamily: 'sans-serif' },
   header: { padding: '20px 24px', borderBottom: '1px solid rgba(247,245,239,0.12)' },
   back: { color: '#F7F5EF', textDecoration: 'none', fontWeight: 700 },
+  proBadge: { background: 'rgba(212,160,23,0.18)', color: '#D4A017', fontWeight: 800, fontSize: 10, padding: '2px 8px', borderRadius: 10, marginRight: 10 },
   main: { maxWidth: 700, margin: '0 auto', padding: '40px 24px 80px' },
   leagueTag: { fontSize: 12, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 },
   matchTitle: { fontSize: 32, fontWeight: 700, margin: '0 0 12px' },
@@ -200,6 +223,8 @@ const styles = {
   stampVerdict: { width: 90, height: 90, borderRadius: '50%', border: '4px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', transform: 'rotate(-8deg)', flexShrink: 0 },
   tipBox: { flex: 1 },
   analysisBox: { background: 'rgba(247,245,239,0.03)', border: '1px solid rgba(247,245,239,0.1)', borderRadius: 12, padding: 24 },
+  unlockedViaPro: { color: '#D4A017', textTransform: 'none', letterSpacing: 0, fontSize: 12, marginLeft: 8 },
   lockedBox: { background: 'rgba(212,160,23,0.05)', border: '1px dashed rgba(212,160,23,0.4)', borderRadius: 12, padding: 32, textAlign: 'center' },
   unlockBtn: { display: 'inline-block', background: '#D4A017', color: '#0E1912', border: 'none', padding: '12px 24px', borderRadius: 20, fontWeight: 700, fontSize: 14, textDecoration: 'none', cursor: 'pointer' },
+  proBtn: { display: 'inline-flex', alignItems: 'center', background: 'transparent', color: '#D4A017', border: '1px solid rgba(212,160,23,0.5)', padding: '12px 20px', borderRadius: 20, fontWeight: 700, fontSize: 14, textDecoration: 'none' },
 }

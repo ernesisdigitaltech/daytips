@@ -1,19 +1,31 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import sd from '@/app/styles/scoutsDossier.module.css'
 
 export default function DashboardPage() {
+  return (
+    <Suspense fallback={null}>
+      <DashboardPageInner />
+    </Suspense>
+  )
+}
+
+function DashboardPageInner() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const upgradedPlan = searchParams.get('upgraded')
   const [user, setUser] = useState(null)
   const [coins, setCoins] = useState(null)
   const [displayCoins, setDisplayCoins] = useState(0)
   const [lastClaim, setLastClaim] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [fullName, setFullName] = useState(null)
+  const [subscriptionTier, setSubscriptionTier] = useState('free')
+  const [subscriptionExpires, setSubscriptionExpires] = useState(null)
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState(false)
   const [message, setMessage] = useState('')
@@ -62,7 +74,7 @@ export default function DashboardPage() {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('coins, last_daily_claim, is_admin, full_name')
+      .select('coins, last_daily_claim, is_admin, full_name, subscription_tier, subscription_expires_at')
       .eq('id', currentUser.id)
       .single()
 
@@ -71,6 +83,8 @@ export default function DashboardPage() {
       setLastClaim(profile.last_daily_claim)
       setIsAdmin(!!profile.is_admin)
       setFullName(profile.full_name)
+      setSubscriptionTier(profile.subscription_tier)
+      setSubscriptionExpires(profile.subscription_expires_at)
     }
 
     setLoading(false)
@@ -126,6 +140,36 @@ export default function DashboardPage() {
           <h1 className={sd.h1}>{fullName ? `Hey, ${fullName.split(' ')[0]}` : 'Your Dashboard'}</h1>
           <p style={{ color: '#F7F5EF88', fontSize: 14, marginBottom: 8 }}>{user.email}</p>
         </div>
+
+        {upgradedPlan && (
+          <div style={{
+            background: 'rgba(212,160,23,0.1)',
+            border: '1px solid rgba(212,160,23,0.35)',
+            borderRadius: 12,
+            padding: '14px 18px',
+            fontSize: 13,
+            color: '#F7F5EF',
+          }}>
+            🎉 You're now on the <strong style={{ color: '#D4A017' }}>{upgradedPlan}</strong> Pro plan — unlimited premium fixtures unlocked.
+          </div>
+        )}
+
+        {subscriptionTier === 'pro' && subscriptionExpires && new Date(subscriptionExpires) > new Date() && (
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'rgba(212,160,23,0.12)',
+            border: '1px solid rgba(212,160,23,0.3)',
+            borderRadius: 999,
+            padding: '4px 12px',
+            fontSize: 12,
+            fontWeight: 700,
+            color: '#D4A017',
+          }}>
+            ✓ Pro member
+          </div>
+        )}
 
         <div className={sd.card} style={{ textAlign: 'center', marginTop: 24 }}>
           <div className={sd.eyebrow}>Coin Balance</div>
