@@ -163,6 +163,7 @@ export default function DashboardPage() {
               <Link href="/admin/overview" className={sd.adminLink}>Overview</Link>
               <Link href="/admin/add-prediction" className={sd.adminLink}>Add Prediction</Link>
               <Link href="/admin/manage-predictions" className={sd.adminLink}>Manage Predictions</Link>
+              <Link href="/admin/manage-subscribers" className={sd.adminLink}>Manage Subscribers</Link>
             </div>
           </div>
         )}

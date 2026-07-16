@@ -14,6 +14,11 @@ const SECTIONS = [
     title: 'Manage Predictions',
     description: 'Toggle free/premium and mark fixture results.',
   },
+  {
+    href: '/admin/manage-subscribers',
+    title: 'Manage Subscribers',
+    description: 'Search users and adjust coin balances.',
+  },
 ];
 
 export default function AdminHomePage() {
