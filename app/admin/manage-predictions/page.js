@@ -11,6 +11,8 @@ export default function ManagePredictionsPage() {
   const [fixtures, setFixtures] = useState([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState(null)
+  const [scoreInputs, setScoreInputs] = useState({})
+  const [showArchived, setShowArchived] = useState(false)
 
   useEffect(() => {
     checkAdminAndLoad()
@@ -46,7 +48,12 @@ export default function ManagePredictionsPage() {
       .select('*, leagues(country, name)')
       .order('kickoff_time', { ascending: false })
 
-    if (!error) setFixtures(data)
+    if (!error) {
+      setFixtures(data)
+      const initialScores = {}
+      data.forEach((fx) => { initialScores[fx.id] = fx.final_score || '' })
+      setScoreInputs(initialScores)
+    }
     setLoading(false)
   }
 
@@ -80,9 +87,43 @@ export default function ManagePredictionsPage() {
     setSavingId(null)
   }
 
+  async function saveScore(fixture) {
+    const value = scoreInputs[fixture.id]?.trim() || null
+    setSavingId(fixture.id)
+    const { error } = await supabase
+      .from('fixtures')
+      .update({ final_score: value })
+      .eq('id', fixture.id)
+
+    if (!error) {
+      setFixtures((prev) =>
+        prev.map((f) => (f.id === fixture.id ? { ...f, final_score: value } : f))
+      )
+    }
+    setSavingId(null)
+  }
+
+  async function toggleArchived(fixture) {
+    setSavingId(fixture.id)
+    const { error } = await supabase
+      .from('fixtures')
+      .update({ admin_archived: !fixture.admin_archived })
+      .eq('id', fixture.id)
+
+    if (!error) {
+      setFixtures((prev) =>
+        prev.map((f) => (f.id === fixture.id ? { ...f, admin_archived: !f.admin_archived } : f))
+      )
+    }
+    setSavingId(null)
+  }
+
   if (checking) {
     return <div style={styles.body}><p style={{ padding: 24, color: '#8B9A92' }}>Checking access...</p></div>
   }
+
+  const archivedCount = fixtures.filter((f) => f.admin_archived).length
+  const visibleFixtures = fixtures.filter((f) => showArchived || !f.admin_archived)
 
   return (
     <div style={styles.body}>
@@ -92,20 +133,31 @@ export default function ManagePredictionsPage() {
       </header>
 
       <main style={styles.main}>
-        <h1 style={styles.h1}>Manage Predictions</h1>
+        <div style={styles.titleRow}>
+          <h1 style={styles.h1}>Manage Predictions</h1>
+          {archivedCount > 0 && (
+            <button onClick={() => setShowArchived((s) => !s)} style={styles.archiveToggle}>
+              {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
+            </button>
+          )}
+        </div>
+        <p style={styles.archiveNote}>
+          Archiving only tidies this admin list — archived fixtures still show on the public homepage on their date.
+        </p>
 
         {loading && <p style={{ color: '#8B9A92' }}>Loading fixtures...</p>}
 
-        {!loading && fixtures.length === 0 && (
-          <p style={{ color: '#8B9A92' }}>No fixtures yet.</p>
+        {!loading && visibleFixtures.length === 0 && (
+          <p style={{ color: '#8B9A92' }}>No fixtures to show.</p>
         )}
 
-        {!loading && fixtures.map((fx) => (
-          <div key={fx.id} style={styles.card}>
+        {!loading && visibleFixtures.map((fx) => (
+          <div key={fx.id} style={{ ...styles.card, ...(fx.admin_archived ? styles.cardArchived : {}) }}>
             <div style={styles.cardHeader}>
               <div>
                 <div style={{ fontSize: 11, color: '#8B9A92', textTransform: 'uppercase' }}>
                   {fx.leagues.country} — {fx.leagues.name}
+                  {fx.admin_archived && <span style={styles.archivedTag}>ARCHIVED</span>}
                 </div>
                 <div style={{ fontSize: 16, fontWeight: 600, marginTop: 2 }}>
                   {fx.home_team} vs {fx.away_team}
@@ -154,6 +206,30 @@ export default function ManagePredictionsPage() {
                 </button>
               </div>
             </div>
+
+            <div style={styles.scoreRow}>
+              <input
+                type="text"
+                placeholder="Final score e.g. 2-1"
+                value={scoreInputs[fx.id] ?? ''}
+                onChange={(e) => setScoreInputs((prev) => ({ ...prev, [fx.id]: e.target.value }))}
+                style={styles.scoreInput}
+              />
+              <button
+                onClick={() => saveScore(fx)}
+                disabled={savingId === fx.id}
+                style={styles.saveScoreBtn}
+              >
+                Save score
+              </button>
+              <button
+                onClick={() => toggleArchived(fx)}
+                disabled={savingId === fx.id}
+                style={styles.archiveBtn}
+              >
+                {fx.admin_archived ? 'Unarchive' : 'Archive'}
+              </button>
+            </div>
           </div>
         ))}
       </main>
@@ -167,11 +243,20 @@ const styles = {
   back: { color: '#F7F5EF', textDecoration: 'none', fontWeight: 700 },
   addLink: { color: '#D4A017', textDecoration: 'none', fontWeight: 600, fontSize: 14 },
   main: { maxWidth: 700, margin: '0 auto', padding: '32px 24px 80px' },
-  h1: { fontSize: 26, fontWeight: 700, marginBottom: 24 },
+  titleRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 },
+  h1: { fontSize: 26, fontWeight: 700, margin: 0 },
+  archiveToggle: { background: 'transparent', border: '1px solid rgba(247,245,239,0.2)', color: '#8B9A92', padding: '6px 12px', borderRadius: 14, fontSize: 12, cursor: 'pointer' },
+  archiveNote: { fontSize: 12, color: '#8B9A9299', marginTop: 6, marginBottom: 24 },
   card: { background: 'rgba(247,245,239,0.03)', border: '1px solid rgba(247,245,239,0.1)', borderRadius: 10, padding: 18, marginBottom: 14 },
+  cardArchived: { opacity: 0.55 },
+  archivedTag: { marginLeft: 8, fontSize: 10, color: '#8B9A92', border: '1px solid rgba(247,245,239,0.2)', padding: '1px 6px', borderRadius: 6, letterSpacing: '0.05em' },
   cardHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 },
   controlsRow: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, flexWrap: 'wrap', gap: 10 },
   toggleLabel: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#8B9A92' },
   resultButtons: { display: 'flex', gap: 8 },
   resultBtn: { background: 'transparent', border: '1px solid rgba(247,245,239,0.2)', color: '#F7F5EF', padding: '6px 12px', borderRadius: 14, fontSize: 12, cursor: 'pointer' },
+  scoreRow: { display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(247,245,239,0.08)', flexWrap: 'wrap' },
+  scoreInput: { flex: '1 1 140px', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(247,245,239,0.15)', background: '#0E1912', color: '#F7F5EF', fontSize: 13 },
+  saveScoreBtn: { background: '#3B7A57', color: '#F7F5EF', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' },
+  archiveBtn: { background: 'transparent', border: '1px solid rgba(247,245,239,0.2)', color: '#8B9A92', padding: '8px 14px', borderRadius: 8, fontSize: 12, cursor: 'pointer' },
 }

@@ -142,6 +142,12 @@ export default function FixturePage() {
           <span>{kickoff.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</span>
           <span>•</span>
           <span>{kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+          {fixture.final_score && (
+            <>
+              <span>•</span>
+              <span style={{ color: '#D4A017', fontWeight: 700 }}>FT {fixture.final_score}</span>
+            </>
+          )}
         </div>
 
         <div style={styles.stampRow}>

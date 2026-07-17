@@ -189,15 +189,13 @@ export default function HomePage() {
                         <span style={styles.teamName}>{fx.home_team}</span>
                         <span style={styles.vs}> vs </span>
                         <span style={styles.teamName}>{fx.away_team}</span>
+                        {fx.final_score && <span style={styles.finalScore}>FT {fx.final_score}</span>}
                       </div>
 
                       {isLocked ? (
                         <div style={styles.lockedPreview}>🔒 Tip and analysis locked — unlock for 2 coins</div>
                       ) : (
-                        <>
-                          <div style={styles.tip}>Tip: {fx.tip}</div>
-                          <div style={styles.analysis}>{fx.analysis}</div>
-                        </>
+                        <div style={styles.revealPrompt}>Tap to view tip &amp; analysis →</div>
                       )}
                     </div>
 
@@ -231,6 +229,10 @@ export default function HomePage() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>D</div>
+            <div style={styles.logoText}>DayTips</div>
+          </div>
           <div style={styles.footerLinks}>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
             <Link href="/responsible-gambling" style={styles.footerLink}>Responsible Gambling</Link>
@@ -280,9 +282,11 @@ const styles = {
   fxTime: { fontSize: 12, color: '#8B9A92', width: 44, flex: '0 0 44px' },
   teamName: { fontSize: 14, fontWeight: 500 },
   vs: { color: '#8B9A92', fontSize: 11 },
+  finalScore: { marginLeft: 10, fontSize: 12, fontWeight: 700, color: '#D4A017', fontFamily: 'monospace' },
   tip: { fontSize: 11, color: '#D4A017', textTransform: 'uppercase', marginTop: 4 },
   analysis: { fontSize: 12.5, color: '#8B9A92', marginTop: 6, maxWidth: 480 },
   lockedPreview: { fontSize: 12.5, color: '#D4A017', marginTop: 6, fontStyle: 'italic' },
+  revealPrompt: { fontSize: 12, color: '#8B9A92', marginTop: 6 },
   stampPending: { flex: '0 0 60px', width: 60, height: 60, borderRadius: '50%', border: '2px dashed rgba(212,160,23,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: '#D4A017' },
   stampVerdict: { flex: '0 0 60px', width: 60, height: 60, borderRadius: '50%', border: '3px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(-8deg)' },
   lock: { fontSize: 11, color: '#8B9A92', border: '1px solid rgba(247,245,239,0.12)', padding: '6px 10px', borderRadius: 14, whiteSpace: 'nowrap' },

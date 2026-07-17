@@ -19,6 +19,8 @@ export default function ManageSubscribersPage() {
   const [reasonInput, setReasonInput] = useState('');
   const [rowMessage, setRowMessage] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     checkAdmin();
@@ -99,6 +101,22 @@ export default function ManageSubscribersPage() {
     setRowMessage(m => ({ ...m, [userId]: { type: 'success', text: `New balance: ${data.coins} coins` } }));
     setAmountInput('');
     setReasonInput('');
+  }
+
+  async function handleDeleteUser(userId) {
+    setDeleting(true);
+    const { error } = await supabase.rpc('admin_delete_user', { p_user_id: userId });
+    setDeleting(false);
+
+    if (error) {
+      setRowMessage(m => ({ ...m, [userId]: { type: 'error', text: error.message } }));
+      setConfirmDeleteId(null);
+      return;
+    }
+
+    setUsers(prev => prev.filter(u => u.id !== userId));
+    setConfirmDeleteId(null);
+    setOpenRowId(null);
   }
 
   if (checking) {
@@ -188,6 +206,37 @@ export default function ManageSubscribersPage() {
                         {msg.text}
                       </p>
                     )}
+
+                    <div style={styles.dangerZone}>
+                      {confirmDeleteId === u.id ? (
+                        <div style={styles.confirmDeleteBox}>
+                          <p style={styles.confirmDeleteText}>
+                            Permanently delete <strong>{u.email}</strong>? This removes their login, coins, and
+                            history. This cannot be undone.
+                          </p>
+                          <div style={styles.actionRow}>
+                            <button
+                              disabled={deleting}
+                              onClick={() => handleDeleteUser(u.id)}
+                              style={styles.confirmDeleteBtn}
+                            >
+                              {deleting ? 'Deleting…' : 'Yes, delete permanently'}
+                            </button>
+                            <button
+                              disabled={deleting}
+                              onClick={() => setConfirmDeleteId(null)}
+                              style={styles.cancelBtn}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button onClick={() => setConfirmDeleteId(u.id)} style={styles.deleteBtn}>
+                          Delete account permanently
+                        </button>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
@@ -224,4 +273,10 @@ const styles = {
   addBtn: { flex: 1, padding: '0.6rem', background: '#3B7A57', color: '#F7F5EF', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
   deductBtn: { flex: 1, padding: '0.6rem', background: 'transparent', color: '#A63A2E', border: '1px solid #A63A2E88', borderRadius: 8, fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' },
   rowMessage: { fontSize: '0.78rem', margin: 0 },
+  dangerZone: { marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(166,58,46,0.2)' },
+  deleteBtn: { background: 'none', border: 'none', color: '#A63A2E99', fontSize: '0.78rem', cursor: 'pointer', padding: 0, textDecoration: 'underline' },
+  confirmDeleteBox: { background: 'rgba(166,58,46,0.08)', border: '1px solid rgba(166,58,46,0.35)', borderRadius: 8, padding: 12 },
+  confirmDeleteText: { fontSize: '0.8rem', color: '#F7F5EF', margin: '0 0 10px', lineHeight: 1.5 },
+  confirmDeleteBtn: { flex: 1, padding: '0.55rem', background: '#A63A2E', color: '#F7F5EF', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' },
+  cancelBtn: { flex: 1, padding: '0.55rem', background: 'transparent', color: '#F7F5EF99', border: '1px solid rgba(247,245,239,0.2)', borderRadius: 8, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' },
 };
