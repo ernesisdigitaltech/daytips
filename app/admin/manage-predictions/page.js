@@ -15,6 +15,7 @@ export default function ManagePredictionsPage() {
   const [showArchived, setShowArchived] = useState(false)
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
+  const [deleteErrors, setDeleteErrors] = useState({})
 
   useEffect(() => {
     checkAdminAndLoad()
@@ -125,10 +126,13 @@ export default function ManagePredictionsPage() {
     const { error } = await supabase.rpc('admin_delete_fixture', { p_fixture_id: fixtureId })
     setDeletingId(null)
 
-    if (!error) {
-      setFixtures((prev) => prev.filter((f) => f.id !== fixtureId))
-      setConfirmDeleteId(null)
+    if (error) {
+      setDeleteErrors((prev) => ({ ...prev, [fixtureId]: error.message }))
+      return
     }
+
+    setFixtures((prev) => prev.filter((f) => f.id !== fixtureId))
+    setConfirmDeleteId(null)
   }
 
   if (checking) {
@@ -267,6 +271,9 @@ export default function ManagePredictionsPage() {
                       Cancel
                     </button>
                   </div>
+                  {deleteErrors[fx.id] && (
+                    <p style={styles.deleteErrorText}>{deleteErrors[fx.id]}</p>
+                  )}
                 </div>
               ) : (
                 <button onClick={() => setConfirmDeleteId(fx.id)} style={styles.deleteBtn}>
@@ -310,4 +317,5 @@ const styles = {
   confirmActionRow: { display: 'flex', gap: 8 },
   confirmDeleteBtn: { flex: 1, padding: '0.55rem', background: '#A63A2E', color: '#F7F5EF', border: 'none', borderRadius: 8, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' },
   cancelBtn: { flex: 1, padding: '0.55rem', background: 'transparent', color: '#F7F5EF99', border: '1px solid rgba(247,245,239,0.2)', borderRadius: 8, fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' },
+  deleteErrorText: { fontSize: '0.75rem', color: '#E0665A', marginTop: 8, marginBottom: 0 },
 }
