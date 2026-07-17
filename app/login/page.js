@@ -1,17 +1,27 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 import sd from '@/app/styles/scoutsDossier.module.css'
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageInner />
+    </Suspense>
+  )
+}
+
+function LoginPageInner() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const justSignedUp = searchParams.get('justSignedUp') === '1'
 
   async function handleLogin(e) {
     e.preventDefault()
@@ -42,6 +52,12 @@ export default function LoginPage() {
 
         <h1 className={sd.authTitle}>Welcome back</h1>
         <p className={sd.authSubtitle}>Log in to see today's verdicts.</p>
+
+        {justSignedUp && (
+          <p className={sd.authSuccess} style={{ textAlign: 'center', marginBottom: '1rem' }}>
+            Account created — log in to get started.
+          </p>
+        )}
 
         <form onSubmit={handleLogin}>
           <div className={sd.field}>
