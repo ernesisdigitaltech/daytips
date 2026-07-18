@@ -1,0 +1,20 @@
+{
+  "appId": "com.daytips.app",
+  "appName": "DayTips",
+  "webDir": "www",
+  "server": {
+    "url": "https://daytips.vercel.app",
+    "cleartext": false,
+    "androidScheme": "https"
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0E1912",
+      "overlaysWebView": false
+    }
+  }
+}
