@@ -105,10 +105,6 @@ export default function AdminLayout({ children }) {
     setPendingCount(count || 0);
   }
 
-  useEffect(() => {
-    checkAdmin();
-  }, []);
-
   async function checkAdmin() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
@@ -151,7 +147,9 @@ export default function AdminLayout({ children }) {
           <p className={sd.eyebrow}>{today}</p>
           <h1 className={sd.h1} style={{ fontSize: '1.6rem' }}>{pageTitle}</h1>
         </div>
-        <a href="/dashboard" className={sd.topBarBack}>← Dashboard</a>
+        {pathname !== '/admin' && (
+          <a href="/admin" className={sd.topBarBack}>← Admin Dashboard</a>
+        )}
       </div>
 
       <div className={sd.pageShell}>
