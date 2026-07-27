@@ -207,7 +207,7 @@ export default function FixturePage() {
                 <span style={styles.unlockedViaPro}>— unlocked with Pro</span>
               )}
             </h3>
-            <p style={{ lineHeight: 1.7, fontSize: 15 }}>{fixture.analysis}</p>
+            <p style={{ lineHeight: 1.7, fontSize: 15, whiteSpace: 'pre-line' }}>{fixture.analysis}</p>
           </div>
         )}
       </main>
