@@ -88,8 +88,8 @@ export default function PrivacyPolicyPage() {
         </Section>
 
         <Section title="11. Contact us">
-          Questions about this policy or requests regarding your data can be directed to our support contact
-          listed on the Subscribe page.
+          Questions about this policy or requests regarding your data can be directed to{' '}
+          <a href="mailto:ernesisdigitaltech@gmail.com" style={{ color: '#D4A017' }}>ernesisdigitaltech@gmail.com</a>.
         </Section>
       </main>
     </div>

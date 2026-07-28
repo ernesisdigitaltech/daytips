@@ -224,6 +224,11 @@ function SubscribePageInner() {
           </button>
           {coinMessage && <p style={styles.confirmMsg}>{coinMessage}</p>}
         </form>
+
+        <p style={styles.contactNote}>
+          Need help or have a question? Email us at{' '}
+          <a href="mailto:ernesisdigitaltech@gmail.com" style={styles.contactLink}>ernesisdigitaltech@gmail.com</a>
+        </p>
       </main>
     </div>
   )
@@ -296,4 +301,6 @@ const styles = {
   selectedCorridor: { fontSize: 12, color: '#8B9A92', marginTop: 12 },
   submitBtn: { width: '100%', padding: 12, marginTop: 14, background: '#D4A017', color: '#0E1912', border: 'none', borderRadius: 20, fontWeight: 700, cursor: 'pointer' },
   confirmMsg: { fontSize: 13, marginTop: 12, color: '#D4A017' },
+  contactNote: { textAlign: 'center', fontSize: 12.5, color: '#8B9A92', marginTop: 28 },
+  contactLink: { color: '#D4A017', textDecoration: 'none', fontWeight: 600 },
 }

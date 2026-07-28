@@ -69,7 +69,8 @@ export default function TermsPage() {
         </Section>
 
         <Section title="10. Contact">
-          Questions about these Terms can be directed to our support contact listed on the Subscribe page.
+          Questions about these Terms can be directed to{' '}
+          <a href="mailto:ernesisdigitaltech@gmail.com" style={{ color: '#D4A017' }}>ernesisdigitaltech@gmail.com</a>.
         </Section>
       </main>
     </div>
