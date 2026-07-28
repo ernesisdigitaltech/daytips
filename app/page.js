@@ -47,6 +47,21 @@ function HomePageInner() {
 
   const [user, setUser] = useState(null)
   const [coins, setCoins] = useState(null)
+  const [expandedLeagues, setExpandedLeagues] = useState(new Set())
+
+  // Start fresh (all multi-fixture leagues folded) whenever the selected day changes
+  useEffect(() => {
+    setExpandedLeagues(new Set())
+  }, [selectedDateKey])
+
+  function toggleLeague(key) {
+    setExpandedLeagues((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
 
   function selectDate(key) {
     setSelectedDateKey(key)
@@ -201,18 +216,40 @@ function HomePageInner() {
           </p>
         )}
 
-        {!loading && fixturesByLeague.map((league) => (
-          <div key={league.country + league.name} style={{ marginTop: 40 }}>
-            <div style={styles.leagueHeader}>
-              <span style={styles.leagueCountry}>{league.country}</span>
-              <span style={styles.leagueName}>{league.name}</span>
-            </div>
+        {!loading && fixturesByLeague.map((league) => {
+          const leagueKey = league.country + league.name
+          const foldable = league.fixtures.length > 1
+          const isExpanded = !foldable || expandedLeagues.has(leagueKey)
 
-            {league.fixtures.map((fx) => {
-              const isLocked = fx.is_premium && !unlockedIds.has(fx.id) && !fx.admin_archived
+          return (
+            <div key={leagueKey} style={{ marginTop: 40 }}>
+              <div
+                style={{ ...styles.leagueHeader, cursor: foldable ? 'pointer' : 'default' }}
+                onClick={() => foldable && toggleLeague(leagueKey)}
+              >
+                <span style={styles.leagueCountry}>{league.country}</span>
+                <span style={styles.leagueName}>{league.name}</span>
+                {foldable && (
+                  <span style={styles.leagueMeta}>
+                    {!isExpanded && `${league.fixtures.length} fixtures · `}
+                    <span style={{ ...styles.chevron, transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+                  </span>
+                )}
+              </div>
 
-              return (
-                <Link key={fx.id} href={`/fixtures/${fx.id}?from=${selectedDateKey}`} style={styles.fixtureLink}>
+              <div
+                style={{
+                  overflow: 'hidden',
+                  maxHeight: isExpanded ? 4000 : 0,
+                  opacity: isExpanded ? 1 : 0,
+                  transition: 'max-height 0.35s ease, opacity 0.25s ease',
+                }}
+              >
+                {league.fixtures.map((fx) => {
+                  const isLocked = fx.is_premium && !unlockedIds.has(fx.id) && !fx.admin_archived
+
+                  return (
+                    <Link key={fx.id} href={`/fixtures/${fx.id}?from=${selectedDateKey}`} style={styles.fixtureLink}>
                   <div style={styles.fixture}>
                     <div style={styles.fxTime}>
                       {new Date(fx.kickoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -257,12 +294,18 @@ function HomePageInner() {
                 </Link>
               )
             })}
-          </div>
-        ))}
+              </div>
+            </div>
+          )
+        })}
       </main>
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>D</div>
+            <div style={styles.logoText}>DayTips</div>
+          </div>
           <div style={styles.footerLinks}>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
@@ -307,7 +350,9 @@ const styles = {
   calNum: { fontSize: 15, marginTop: 3 },
   leagueHeader: { display: 'flex', alignItems: 'baseline', gap: 12, paddingBottom: 10, borderBottom: '2px solid #3B7A57' },
   leagueCountry: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.1em' },
-  leagueName: { fontWeight: 700, fontSize: 22 },
+  leagueName: { fontWeight: 700, fontSize: 22, flex: 1 },
+  leagueMeta: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8B9A92' },
+  chevron: { display: 'inline-block', transition: 'transform 0.25s ease', color: '#D4A017', fontSize: 14 },
   fixtureLink: { textDecoration: 'none', color: 'inherit' },
   fixture: { display: 'flex', alignItems: 'center', gap: 16, padding: '18px 4px', borderBottom: '1px solid rgba(247,245,239,0.12)' },
   fxTime: { fontSize: 12, color: '#8B9A92', width: 44, flex: '0 0 44px' },
