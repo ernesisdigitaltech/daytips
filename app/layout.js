@@ -1,4 +1,5 @@
 import "./globals.css";
+import CapacitorBackButton from "./components/CapacitorBackButton";
 
 export const metadata = {
   title: "DayTips",
@@ -20,7 +21,10 @@ export const viewport = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <CapacitorBackButton />
+        {children}
+      </body>
     </html>
   );
 }
