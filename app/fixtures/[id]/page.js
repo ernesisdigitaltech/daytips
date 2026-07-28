@@ -1,12 +1,23 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 
 export default function FixturePage() {
+  return (
+    <Suspense fallback={null}>
+      <FixturePageInner />
+    </Suspense>
+  )
+}
+
+function FixturePageInner() {
   const params = useParams()
+  const searchParams = useSearchParams()
+  const fromDate = searchParams.get('from')
+  const backHref = fromDate ? `/?date=${fromDate}` : '/'
   const [fixture, setFixture] = useState(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
@@ -107,7 +118,7 @@ export default function FixturePage() {
       <div style={styles.body}>
         <div style={{ padding: 24 }}>
           <p>Fixture not found.</p>
-          <Link href="/" style={{ color: '#D4A017' }}>← Back to fixtures</Link>
+          <Link href={backHref} style={{ color: '#D4A017' }}>← Back to fixtures</Link>
         </div>
       </div>
     )
@@ -120,7 +131,7 @@ export default function FixturePage() {
   return (
     <div style={styles.body}>
       <header style={styles.header}>
-        <Link href="/" style={styles.back}>← DayTips</Link>
+        <Link href={backHref} style={styles.back}>← DayTips</Link>
         {user && (
           <span style={{ float: 'right', fontSize: 13 }}>
             {isPro && <span style={styles.proBadge}>✓ PRO</span>}

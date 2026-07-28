@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 
@@ -9,15 +10,48 @@ function formatDateKey(date) {
 }
 
 export default function HomePage() {
+  return (
+    <Suspense fallback={null}>
+      <HomePageInner />
+    </Suspense>
+  )
+}
+
+function HomePageInner() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+
   const [allFixtures, setAllFixtures] = useState([])
   const [unlockedIds, setUnlockedIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
 
-  const [weekOffset, setWeekOffset] = useState(0) // shifts the 7-day window by whole weeks
-  const [selectedDateKey, setSelectedDateKey] = useState(formatDateKey(new Date()))
+  // If arriving with ?date=YYYY-MM-DD (e.g. returning from a fixture page),
+  // restore that date instead of defaulting to today.
+  const initialDateKey = (() => {
+    const fromUrl = searchParams.get('date')
+    return fromUrl && /^\d{4}-\d{2}-\d{2}$/.test(fromUrl) ? fromUrl : formatDateKey(new Date())
+  })()
+
+  // Derive which 7-day window should be visible so the selected date's
+  // week is actually in view, not just the date itself being "selected"
+  // while scrolled off the visible calendar strip.
+  const initialWeekOffset = (() => {
+    const diffDays = Math.round(
+      (new Date(initialDateKey) - new Date(formatDateKey(new Date()))) / (1000 * 60 * 60 * 24)
+    )
+    return Math.round(diffDays / 7)
+  })()
+
+  const [weekOffset, setWeekOffset] = useState(initialWeekOffset) // shifts the 7-day window by whole weeks
+  const [selectedDateKey, setSelectedDateKey] = useState(initialDateKey)
 
   const [user, setUser] = useState(null)
   const [coins, setCoins] = useState(null)
+
+  function selectDate(key) {
+    setSelectedDateKey(key)
+    router.replace(`/?date=${key}`, { scroll: false })
+  }
 
   useEffect(() => {
     loadFixtures()
@@ -143,7 +177,7 @@ export default function HomePage() {
               return (
                 <button
                   key={key}
-                  onClick={() => setSelectedDateKey(key)}
+                  onClick={() => selectDate(key)}
                   style={{
                     ...styles.calDay,
                     background: isSelected ? '#3B7A57' : 'transparent',
@@ -178,7 +212,7 @@ export default function HomePage() {
               const isLocked = fx.is_premium && !unlockedIds.has(fx.id)
 
               return (
-                <Link key={fx.id} href={`/fixtures/${fx.id}`} style={styles.fixtureLink}>
+                <Link key={fx.id} href={`/fixtures/${fx.id}?from=${selectedDateKey}`} style={styles.fixtureLink}>
                   <div style={styles.fixture}>
                     <div style={styles.fxTime}>
                       {new Date(fx.kickoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -229,6 +263,10 @@ export default function HomePage() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>D</div>
+            <div style={styles.logoText}>DayTips</div>
+          </div>
           <div style={styles.footerLinks}>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
             <Link href="/responsible-gambling" style={styles.footerLink}>Responsible Gambling</Link>

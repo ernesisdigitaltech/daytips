@@ -147,9 +147,12 @@ export default function AdminLayout({ children }) {
           <p className={sd.eyebrow}>{today}</p>
           <h1 className={sd.h1} style={{ fontSize: '1.6rem' }}>{pageTitle}</h1>
         </div>
-        {pathname !== '/admin' && (
-          <a href="/admin" className={sd.topBarBack}>← Admin Dashboard</a>
-        )}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+          {pathname !== '/admin' && (
+            <a href="/admin" className={sd.topBarBack}>← Admin Dashboard</a>
+          )}
+          <a href="/" className={sd.topBarBack}>View Homepage →</a>
+        </div>
       </div>
 
       <div className={sd.pageShell}>
