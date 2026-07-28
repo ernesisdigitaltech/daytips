@@ -89,7 +89,7 @@ export default function PrivacyPolicyPage() {
 
         <Section title="11. Contact us">
           Questions about this policy or requests regarding your data can be directed to{' '}
-          <a href="mailto:ernesisdigitaltech@gmail.com" style={{ color: '#D4A017' }}>ernesisdigitaltech@gmail.com</a>.
+          <a href="mailto:supportdaytips@gmail.com" style={{ color: '#D4A017' }}>supportdaytips@gmail.com</a>.
         </Section>
       </main>
     </div>

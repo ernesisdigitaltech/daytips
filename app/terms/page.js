@@ -70,7 +70,7 @@ export default function TermsPage() {
 
         <Section title="10. Contact">
           Questions about these Terms can be directed to{' '}
-          <a href="mailto:ernesisdigitaltech@gmail.com" style={{ color: '#D4A017' }}>ernesisdigitaltech@gmail.com</a>.
+          <a href="mailto:supportdaytips@gmail.com" style={{ color: '#D4A017' }}>supportdaytips@gmail.com</a>.
         </Section>
       </main>
     </div>

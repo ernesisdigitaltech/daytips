@@ -302,10 +302,6 @@ function HomePageInner() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
-          <div style={styles.logo}>
-            <div style={styles.logoMark}>D</div>
-            <div style={styles.logoText}>DayTips</div>
-          </div>
           <div style={styles.footerLinks}>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
