@@ -126,7 +126,7 @@ function FixturePageInner() {
 
   const kickoff = new Date(fixture.kickoff_time)
   // Pro subscribers see every fixture unlocked, regardless of coin-unlock history
-  const isLocked = fixture.is_premium && !unlocked && !isPro
+  const isLocked = fixture.is_premium && !unlocked && !isPro && !fixture.admin_archived
 
   return (
     <div style={styles.body}>

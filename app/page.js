@@ -209,7 +209,7 @@ function HomePageInner() {
             </div>
 
             {league.fixtures.map((fx) => {
-              const isLocked = fx.is_premium && !unlockedIds.has(fx.id)
+              const isLocked = fx.is_premium && !unlockedIds.has(fx.id) && !fx.admin_archived
 
               return (
                 <Link key={fx.id} href={`/fixtures/${fx.id}?from=${selectedDateKey}`} style={styles.fixtureLink}>
