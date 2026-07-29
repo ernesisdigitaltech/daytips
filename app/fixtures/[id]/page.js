@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
+import sd from '@/app/styles/scoutsDossier.module.css'
 
 export default function FixturePage() {
   return (
@@ -211,14 +212,25 @@ function FixturePageInner() {
             {message && <p style={{ color: '#A63A2E', fontSize: 13, marginTop: 12 }}>{message}</p>}
           </div>
         ) : (
-          <div style={styles.analysisBox}>
-            <h3 style={{ marginTop: 0, fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#8B9A92' }}>
-              Full Analysis
+        ) : (
+          <div style={styles.analysisCard}>
+            <div style={styles.analysisTopRow}>
+              <p className={sd.eyebrow} style={{ margin: 0 }}>The Read</p>
               {fixture.is_premium && isPro && !unlocked && (
-                <span style={styles.unlockedViaPro}>— unlocked with Pro</span>
+                <span style={styles.unlockedViaPro}>Unlocked with Pro</span>
               )}
-            </h3>
-            <p style={{ lineHeight: 1.7, fontSize: 15, whiteSpace: 'pre-line' }}>{fixture.analysis}</p>
+            </div>
+            <span style={styles.quoteMark}>&#8220;</span>
+            <div style={styles.analysisBody}>
+              {fixture.analysis
+                .split(/\n+/)
+                .filter((para) => para.trim().length > 0)
+                .map((para, i) => (
+                  <p key={i} style={styles.analysisPara}>
+                    {para}
+                  </p>
+                ))}
+            </div>
           </div>
         )}
       </main>
@@ -239,8 +251,38 @@ const styles = {
   stampPending: { width: 90, height: 90, borderRadius: '50%', border: '3px dashed rgba(212,160,23,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', flexShrink: 0 },
   stampVerdict: { width: 90, height: 90, borderRadius: '50%', border: '4px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', transform: 'rotate(-8deg)', flexShrink: 0 },
   tipBox: { flex: 1 },
-  analysisBox: { background: 'rgba(247,245,239,0.03)', border: '1px solid rgba(247,245,239,0.1)', borderRadius: 12, padding: 24 },
-  unlockedViaPro: { color: '#D4A017', textTransform: 'none', letterSpacing: 0, fontSize: 12, marginLeft: 8 },
+  analysisCard: {
+    position: 'relative',
+    background: 'linear-gradient(165deg, rgba(59,122,87,0.10), rgba(247,245,239,0.025))',
+    border: '1px solid rgba(212,160,23,0.25)',
+    borderLeft: '3px solid #D4A017',
+    borderRadius: 14,
+    padding: '28px 26px 30px',
+    overflow: 'hidden',
+  },
+  analysisTopRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 },
+  quoteMark: {
+    position: 'absolute',
+    top: -6,
+    right: 18,
+    fontSize: 96,
+    lineHeight: 1,
+    color: 'rgba(212,160,23,0.10)',
+    fontFamily: 'Georgia, serif',
+    pointerEvents: 'none',
+    userSelect: 'none',
+  },
+  analysisBody: { position: 'relative' },
+  analysisPara: { lineHeight: 1.85, fontSize: 16, color: '#EDEAE1', margin: '0 0 16px', fontFamily: 'Inter, sans-serif' },
+  unlockedViaPro: {
+    fontSize: 11,
+    fontFamily: 'IBM Plex Mono, monospace',
+    color: '#D4A017',
+    background: 'rgba(212,160,23,0.12)',
+    padding: '3px 9px',
+    borderRadius: 999,
+    letterSpacing: '0.04em',
+  },
   lockedBox: { background: 'rgba(212,160,23,0.05)', border: '1px dashed rgba(212,160,23,0.4)', borderRadius: 12, padding: 32, textAlign: 'center' },
   unlockBtn: { display: 'inline-block', background: '#D4A017', color: '#0E1912', border: 'none', padding: '12px 24px', borderRadius: 20, fontWeight: 700, fontSize: 14, textDecoration: 'none', cursor: 'pointer' },
   proBtn: { display: 'inline-flex', alignItems: 'center', background: 'transparent', color: '#D4A017', border: '1px solid rgba(212,160,23,0.5)', padding: '12px 20px', borderRadius: 20, fontWeight: 700, fontSize: 14, textDecoration: 'none' },

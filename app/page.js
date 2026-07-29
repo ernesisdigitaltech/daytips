@@ -260,7 +260,6 @@ function HomePageInner() {
                         <span style={styles.teamName}>{fx.home_team}</span>
                         <span style={styles.vs}> vs </span>
                         <span style={styles.teamName}>{fx.away_team}</span>
-                        {fx.final_score && <span style={styles.finalScore}>FT {fx.final_score}</span>}
                       </div>
 
                       {isLocked ? (
@@ -354,7 +353,6 @@ const styles = {
   fxTime: { fontSize: 12, color: '#8B9A92', width: 44, flex: '0 0 44px' },
   teamName: { fontSize: 14, fontWeight: 500 },
   vs: { color: '#8B9A92', fontSize: 11 },
-  finalScore: { marginLeft: 10, fontSize: 12, fontWeight: 700, color: '#D4A017', fontFamily: 'monospace' },
   tip: { fontSize: 11, color: '#D4A017', textTransform: 'uppercase', marginTop: 4 },
   analysis: { fontSize: 12.5, color: '#8B9A92', marginTop: 6, maxWidth: 480 },
   lockedPreview: { fontSize: 12.5, color: '#D4A017', marginTop: 6, fontStyle: 'italic' },
