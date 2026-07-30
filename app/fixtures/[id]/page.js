@@ -212,7 +212,6 @@ function FixturePageInner() {
             {message && <p style={{ color: '#A63A2E', fontSize: 13, marginTop: 12 }}>{message}</p>}
           </div>
         ) : (
-        ) : (
           <div style={styles.analysisCard}>
             <div style={styles.analysisTopRow}>
               <p className={sd.eyebrow} style={{ margin: 0 }}>The Read</p>
