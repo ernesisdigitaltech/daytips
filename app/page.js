@@ -6,7 +6,12 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 
 function formatDateKey(date) {
-  return date.toISOString().split('T')[0]
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Africa/Lagos',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
 }
 
 export default function HomePage() {
