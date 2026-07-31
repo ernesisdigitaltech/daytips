@@ -319,7 +319,6 @@ function HomePageInner() {
           We do not accept bets or wagers. Tips are not guaranteed and should never be treated as financial advice.
           You must be 18 or older to use this service. If you choose to bet with a licensed operator based on
           information found here, please gamble responsibly.
-          Check for updates regularly.
         </p>
 
         <p style={styles.footerCopyright}>© {new Date().getFullYear()} DayTips. All rights reserved.</p>

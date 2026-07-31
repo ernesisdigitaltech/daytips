@@ -109,7 +109,7 @@ function DashboardPageInner() {
     if (data.success) {
       setCoins(data.coins)
       setLastClaim(todayStr)
-      setMessage('Claimed 5 coins! 🎉')
+      setMessage('Claimed 3 coins! 🎉')
     } else {
       setMessage(data.message)
     }
@@ -189,7 +189,7 @@ function DashboardPageInner() {
               ? 'Daily coins already claimed ✓'
               : claiming
               ? 'Claiming…'
-              : 'Claim your 5 free daily coins'}
+              : 'Claim your 3 free daily coins'}
           </button>
 
           {message && <p className={sd.message}>{message}</p>}

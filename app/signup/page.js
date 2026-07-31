@@ -63,7 +63,7 @@ export default function SignupPage() {
         </div>
 
         <h1 className={sd.authTitle}>Create your account</h1>
-        <p className={sd.authSubtitle}>Get 10 free coins to start unlocking tips.</p>
+        <p className={sd.authSubtitle}>Get 5 free coins to start unlocking tips.</p>
 
         <form onSubmit={handleSignup}>
           <div className={sd.field}>
