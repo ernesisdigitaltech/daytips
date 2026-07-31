@@ -257,13 +257,19 @@ function HomePageInner() {
 
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div>
-                        <span style={styles.teamName}>{fx.home_team}</span>
-                        <span style={styles.vs}> vs </span>
-                        <span style={styles.teamName}>{fx.away_team}</span>
+                        {isLocked ? (
+                          <span style={styles.hiddenTeams}>🔒 Teams hidden until unlocked</span>
+                        ) : (
+                          <>
+                            <span style={styles.teamName}>{fx.home_team}</span>
+                            <span style={styles.vs}> vs </span>
+                            <span style={styles.teamName}>{fx.away_team}</span>
+                          </>
+                        )}
                       </div>
 
                       {isLocked ? (
-                        <div style={styles.lockedPreview}>🔒 Tip and analysis locked — unlock for 2 coins</div>
+                        <div style={styles.lockedPreview}>Unlock for 2 coins to reveal teams, tip, and analysis</div>
                       ) : (
                         <div style={styles.revealPrompt}>Tap to view tip &amp; analysis →</div>
                       )}
@@ -301,6 +307,10 @@ function HomePageInner() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>D</div>
+            <div style={styles.logoText}>DayTips</div>
+          </div>
           <div style={styles.footerLinks}>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
@@ -352,6 +362,7 @@ const styles = {
   fixture: { display: 'flex', alignItems: 'center', gap: 16, padding: '18px 4px', borderBottom: '1px solid rgba(247,245,239,0.12)' },
   fxTime: { fontSize: 12, color: '#8B9A92', width: 44, flex: '0 0 44px' },
   teamName: { fontSize: 14, fontWeight: 500 },
+  hiddenTeams: { fontSize: 14, fontWeight: 500, color: '#8B9A92', fontStyle: 'italic' },
   vs: { color: '#8B9A92', fontSize: 11 },
   tip: { fontSize: 11, color: '#D4A017', textTransform: 'uppercase', marginTop: 4 },
   analysis: { fontSize: 12.5, color: '#8B9A92', marginTop: 6, maxWidth: 480 },
