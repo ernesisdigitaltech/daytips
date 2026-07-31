@@ -147,7 +147,13 @@ function FixturePageInner() {
         </div>
 
         <h1 style={styles.matchTitle}>
-          {fixture.home_team} <span style={{ color: '#8B9A92', fontWeight: 400 }}>vs</span> {fixture.away_team}
+          {isLocked ? (
+            <span style={styles.hiddenTeams}>🔒 Teams hidden until unlocked</span>
+          ) : (
+            <>
+              {fixture.home_team} <span style={{ color: '#8B9A92', fontWeight: 400 }}>vs</span> {fixture.away_team}
+            </>
+          )}
         </h1>
 
         <div style={styles.kickoffRow}>
@@ -193,7 +199,7 @@ function FixturePageInner() {
           <div style={styles.lockedBox}>
             <div style={{ fontSize: 28, marginBottom: 8 }}>🔒</div>
             <p style={{ color: '#8B9A92', fontSize: 14, marginBottom: 16 }}>
-              The tip and full analysis for this fixture are locked. Unlock for 2 coins, or go Pro for unlimited access.
+              Team names, tip, and full analysis for this fixture are locked. Unlock for 2 coins, or go Pro for unlimited access.
             </p>
 
             {!user && (
@@ -245,6 +251,7 @@ const styles = {
   main: { maxWidth: 700, margin: '0 auto', padding: '40px 24px 80px' },
   leagueTag: { fontSize: 12, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 12 },
   matchTitle: { fontSize: 32, fontWeight: 700, margin: '0 0 12px' },
+  hiddenTeams: { fontSize: 22, fontWeight: 500, color: '#8B9A92', fontStyle: 'italic' },
   kickoffRow: { display: 'flex', gap: 10, color: '#8B9A92', fontSize: 14, marginBottom: 32 },
   stampRow: { display: 'flex', alignItems: 'center', gap: 24, marginBottom: 32 },
   stampPending: { width: 90, height: 90, borderRadius: '50%', border: '3px dashed rgba(212,160,23,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', flexShrink: 0 },
