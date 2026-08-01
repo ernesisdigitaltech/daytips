@@ -274,7 +274,9 @@ function HomePageInner() {
                     <Link key={fx.id} href={`/fixtures/${fx.id}?from=${selectedDateKey}`} style={styles.fixtureLink}>
                   <div style={styles.fixture}>
                     <div style={styles.fxTime}>
-                      {new Date(fx.kickoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      {fx.result === 'pending'
+                        ? '—'
+                        : new Date(fx.kickoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
 
                     <div style={{ flex: 1, minWidth: 0 }}>
@@ -329,6 +331,10 @@ function HomePageInner() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>D</div>
+            <div style={styles.logoText}>DayTips</div>
+          </div>
           <div style={styles.footerLinks}>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
