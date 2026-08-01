@@ -6,12 +6,14 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabaseClient'
 
 function formatDateKey(date) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Africa/Lagos',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date)
+  // Use LOCAL calendar date components, not toISOString() (which is always
+  // UTC) — otherwise fixtures can shift by a day depending on the viewer's
+  // timezone and the time of day, which was causing every fixture to
+  // display one day later than intended.
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}`
 }
 
 export default function HomePage() {
@@ -311,7 +313,7 @@ function HomePageInner() {
       </main>
 
       <footer style={styles.footer}>
-        <div style={styles.footerTop}>
+        <div style={styles.footerTop}>s
           <div style={styles.footerLinks}>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>

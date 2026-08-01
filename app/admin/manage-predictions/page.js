@@ -16,6 +16,10 @@ export default function ManagePredictionsPage() {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [deleteErrors, setDeleteErrors] = useState({})
+  const [editingId, setEditingId] = useState(null)
+  const [editForm, setEditForm] = useState({ kickoff: '', analysis: '' })
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editError, setEditError] = useState('')
 
   useEffect(() => {
     checkAdminAndLoad()
@@ -121,6 +125,68 @@ export default function ManagePredictionsPage() {
     setSavingId(null)
   }
 
+  // Converts a stored kickoff_time into the value a <input type="datetime-local">
+  // needs, using LOCAL time components (not UTC) — matching the same fix
+  // applied on the homepage, so editing a fixture doesn't reintroduce the
+  // one-day-shift bug.
+  function toDatetimeLocalValue(isoString) {
+    const d = new Date(isoString)
+    const year = d.getFullYear()
+    const month = String(d.getMonth() + 1).padStart(2, '0')
+    const day = String(d.getDate()).padStart(2, '0')
+    const hours = String(d.getHours()).padStart(2, '0')
+    const minutes = String(d.getMinutes()).padStart(2, '0')
+    return `${year}-${month}-${day}T${hours}:${minutes}`
+  }
+
+  function startEdit(fixture) {
+    setEditingId(fixture.id)
+    setEditError('')
+    setEditForm({
+      kickoff: toDatetimeLocalValue(fixture.kickoff_time),
+      analysis: fixture.analysis || '',
+    })
+  }
+
+  function cancelEdit() {
+    setEditingId(null)
+    setEditError('')
+  }
+
+  async function saveEdit(fixture) {
+    if (!editForm.kickoff) {
+      setEditError('Kickoff date and time are required.')
+      return
+    }
+
+    setSavingEdit(true)
+    setEditError('')
+
+    // A datetime-local value like "2026-07-21T15:00" has no timezone info,
+    // so JS correctly parses it as the admin's LOCAL time — new Date(...)
+    // then converts that to the right UTC instant for storage.
+    const kickoffIso = new Date(editForm.kickoff).toISOString()
+
+    const { error } = await supabase
+      .from('fixtures')
+      .update({ kickoff_time: kickoffIso, analysis: editForm.analysis })
+      .eq('id', fixture.id)
+
+    setSavingEdit(false)
+
+    if (error) {
+      setEditError(error.message)
+      return
+    }
+
+    setFixtures((prev) =>
+      prev.map((f) =>
+        f.id === fixture.id ? { ...f, kickoff_time: kickoffIso, analysis: editForm.analysis } : f
+      )
+    )
+    setEditingId(null)
+  }
+
   async function handleDeleteFixture(fixtureId) {
     setDeletingId(fixtureId)
     const { error } = await supabase.rpc('admin_delete_fixture', { p_fixture_id: fixtureId })
@@ -144,19 +210,14 @@ export default function ManagePredictionsPage() {
 
   return (
     <div style={styles.body}>
-      <header style={styles.header}>
-        <Link href="/" style={styles.back}>← DayTips</Link>
-        <Link href="/admin/add-prediction" style={styles.addLink}>+ Add Prediction</Link>
-      </header>
-
       <main style={styles.main}>
         <div style={styles.titleRow}>
-          <h1 style={styles.h1}>Manage Predictions</h1>
           {archivedCount > 0 && (
             <button onClick={() => setShowArchived((s) => !s)} style={styles.archiveToggle}>
               {showArchived ? 'Hide archived' : `Show archived (${archivedCount})`}
             </button>
           )}
+          <Link href="/admin/add-prediction" style={styles.addLink}>+ Add Prediction</Link>
         </div>
         <p style={styles.archiveNote}>
           Archiving only tidies this admin list — archived fixtures still show on the public homepage on their date.
@@ -248,6 +309,47 @@ export default function ManagePredictionsPage() {
               </button>
             </div>
 
+            <div style={styles.editZone}>
+              {editingId === fx.id ? (
+                <div style={styles.editBox}>
+                  <label style={styles.editLabel}>Kickoff date &amp; time</label>
+                  <input
+                    type="datetime-local"
+                    value={editForm.kickoff}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, kickoff: e.target.value }))}
+                    style={styles.editInput}
+                  />
+
+                  <label style={styles.editLabel}>Analysis</label>
+                  <textarea
+                    value={editForm.analysis}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, analysis: e.target.value }))}
+                    rows={6}
+                    style={styles.editTextarea}
+                  />
+
+                  {editError && <p style={styles.editError}>{editError}</p>}
+
+                  <div style={styles.actionRow}>
+                    <button
+                      onClick={() => saveEdit(fx)}
+                      disabled={savingEdit}
+                      style={styles.saveScoreBtn}
+                    >
+                      {savingEdit ? 'Saving…' : 'Save changes'}
+                    </button>
+                    <button onClick={cancelEdit} disabled={savingEdit} style={styles.archiveBtn}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button onClick={() => startEdit(fx)} style={styles.editToggleBtn}>
+                  Edit date, time &amp; analysis
+                </button>
+              )}
+            </div>
+
             <div style={styles.dangerZone}>
               {confirmDeleteId === fx.id ? (
                 <div style={styles.confirmDeleteBox}>
@@ -307,6 +409,14 @@ const styles = {
   resultButtons: { display: 'flex', gap: 8 },
   resultBtn: { background: 'transparent', border: '1px solid rgba(247,245,239,0.2)', color: '#F7F5EF', padding: '6px 12px', borderRadius: 14, fontSize: 12, cursor: 'pointer' },
   scoreRow: { display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(247,245,239,0.08)', flexWrap: 'wrap' },
+  editZone: { marginTop: 12, paddingTop: 12, borderTop: '1px solid rgba(247,245,239,0.08)' },
+  editToggleBtn: { background: 'none', border: 'none', color: '#8B9A92', fontSize: '0.78rem', cursor: 'pointer', padding: 0, textDecoration: 'underline' },
+  editBox: { display: 'flex', flexDirection: 'column', gap: 6 },
+  editLabel: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 8 },
+  editInput: { padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(247,245,239,0.15)', background: '#0E1912', color: '#F7F5EF', fontSize: 13 },
+  editTextarea: { padding: '10px', borderRadius: 8, border: '1px solid rgba(247,245,239,0.15)', background: '#0E1912', color: '#F7F5EF', fontSize: 13, lineHeight: 1.6, fontFamily: 'inherit', resize: 'vertical' },
+  editError: { fontSize: 12, color: '#E0665A', margin: '4px 0 0' },
+  actionRow: { display: 'flex', gap: 8, marginTop: 8 },
   scoreInput: { flex: '1 1 140px', padding: '8px 10px', borderRadius: 8, border: '1px solid rgba(247,245,239,0.15)', background: '#0E1912', color: '#F7F5EF', fontSize: 13 },
   saveScoreBtn: { background: '#3B7A57', color: '#F7F5EF', border: 'none', padding: '8px 14px', borderRadius: 8, fontSize: 12, fontWeight: 700, cursor: 'pointer' },
   archiveBtn: { background: 'transparent', border: '1px solid rgba(247,245,239,0.2)', color: '#8B9A92', padding: '8px 14px', borderRadius: 8, fontSize: 12, cursor: 'pointer' },
