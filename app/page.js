@@ -258,9 +258,12 @@ function HomePageInner() {
                   return (
                     <Link key={fx.id} href={`/fixtures/${fx.id}?from=${selectedDateKey}`} style={styles.fixtureLink}>
                   <div style={styles.fixture}>
-                    <div style={styles.fxTime}>
+                    <div style={styles.fixture}>
+                      {fx.result !== 'pending' && (
+                      <div style={styles.fxTime}>
                       {new Date(fx.kickoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
+                      </div>
+                   )}
 
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div>
