@@ -313,7 +313,7 @@ function HomePageInner() {
       </main>
 
       <footer style={styles.footer}>
-        <div style={styles.footerTop}>s
+        <div style={styles.footerTop}>
           <div style={styles.footerLinks}>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
