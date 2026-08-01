@@ -163,25 +163,11 @@ function HomePageInner() {
           <img src="/logo.png" alt="DayTips" style={styles.logoMark} />
           <div style={styles.logoText}>DayTips</div>
         </div>
-        <div style={styles.headerRight}>
-          <a
-            href="https://t.me/daytipsadmin"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={styles.telegramBtn}
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M22 2 11 13" />
-              <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
-            </svg>
-            Chat Admin
-          </a>
-          {user ? (
-            <Link href="/dashboard" style={styles.dashboardBtn}>My Dashboard</Link>
-          ) : (
-            <Link href="/login" style={styles.loginBtn}>Log in</Link>
-          )}
-        </div>
+        {user ? (
+          <Link href="/dashboard" style={styles.dashboardBtn}>My Dashboard</Link>
+        ) : (
+          <Link href="/login" style={styles.loginBtn}>Log in</Link>
+        )}
       </header>
 
       {user && (
@@ -192,6 +178,21 @@ function HomePageInner() {
           </div>
         </Link>
       )}
+
+      <div style={styles.telegramRow}>
+        <a
+          href="https://t.me/daytipsadmin"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={styles.telegramBtn}
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 2 11 13" />
+            <path d="M22 2 15 22l-4-9-9-4 20-7Z" />
+          </svg>
+          Chat Admin
+        </a>
+      </div>
 
       <main style={styles.main}>
         <section style={styles.hero}>
@@ -356,8 +357,8 @@ const styles = {
   logoText: { fontWeight: 800, fontSize: 22 },
   loginBtn: { background: '#D4A017', color: '#0E1912', border: 'none', padding: '9px 16px', borderRadius: 20, fontWeight: 600, fontSize: 13, textDecoration: 'none' },
   dashboardBtn: { background: '#3B7A57', color: '#F7F5EF', border: 'none', padding: '9px 16px', borderRadius: 20, fontWeight: 600, fontSize: 13, textDecoration: 'none' },
-  headerRight: { display: 'flex', alignItems: 'center', gap: 10 },
-  telegramBtn: { display: 'flex', alignItems: 'center', gap: 6, background: '#229ED9', color: '#FFFFFF', border: 'none', padding: '9px 14px', borderRadius: 20, fontWeight: 600, fontSize: 13, textDecoration: 'none' },
+  telegramRow: { display: 'flex', justifyContent: 'center', padding: '12px 24px 0' },
+  telegramBtn: { display: 'flex', alignItems: 'center', gap: 6, background: '#229ED9', color: '#FFFFFF', border: 'none', padding: '8px 16px', borderRadius: 20, fontWeight: 600, fontSize: 12.5, textDecoration: 'none' },
   welcomeBarLink: { textDecoration: 'none', color: 'inherit', display: 'block' },
   welcomeBar: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, flexWrap: 'wrap', padding: '10px 24px', background: 'rgba(212,160,23,0.1)', borderBottom: '1px solid rgba(212,160,23,0.3)', fontSize: 13, color: '#F7F5EF' },
   welcomeBarArrow: { color: '#D4A017', fontWeight: 600 },
