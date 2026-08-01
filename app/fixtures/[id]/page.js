@@ -156,9 +156,10 @@ function FixturePageInner() {
           )}
         </h1>
 
-        
         <div style={styles.kickoffRow}>
           <span>{kickoff.toLocaleDateString([], { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+          <span>•</span>
+          <span>{kickoff.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           {fixture.final_score && (
             <>
               <span>•</span>
