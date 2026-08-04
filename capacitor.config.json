@@ -3,7 +3,7 @@
   "appName": "DayTips",
   "webDir": "www",
   "server": {
-    "url": "https://daytips.vercel.app",
+    "url": "https://getdaytips.com",
     "cleartext": false,
     "androidScheme": "https"
   },

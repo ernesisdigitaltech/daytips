@@ -2,6 +2,7 @@ import "./globals.css";
 import CapacitorBackButton from "./components/CapacitorBackButton";
 
 export const metadata = {
+  metadataBase: new URL("https://getdaytips.com"),
   title: "DayTips",
   description: "Football predictions, analysis, and confidence-rated tips — updated daily.",
   manifest: "/manifest.json",
