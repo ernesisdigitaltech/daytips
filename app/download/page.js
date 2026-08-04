@@ -5,7 +5,7 @@ export const metadata = {
 }
 
 // TODO: replace with your real Google Drive share link (or Play Store link once live)
-const APK_DOWNLOAD_LINK = 'https://drive.google.com/YOUR-LINK-HERE'
+const APK_DOWNLOAD_LINK = '/daytips.apk'
 const PLAY_STORE_LIVE = false // flip to true once the Play Store listing goes live
 
 export default function DownloadPage() {
@@ -30,7 +30,7 @@ export default function DownloadPage() {
           <a href="#" style={styles.primaryBtn}>Get it on Google Play</a>
         ) : (
           <>
-            <a href={APK_DOWNLOAD_LINK} style={styles.primaryBtn}>Download for Android</a>
+            <a href={APK_DOWNLOAD_LINK} download="DayTips.apk" style={styles.primaryBtn}>Download for Android</a>
             <p style={styles.playStoreNote}>
               We're finishing our official Google Play listing — for now, install directly using the button above.
             </p>
