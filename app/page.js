@@ -332,6 +332,7 @@ function HomePageInner() {
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
           <div style={styles.footerLinks}>
+            <Link href="/download" style={styles.footerLink}>Get the App</Link>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
             <Link href="/terms" style={styles.footerLink}>Terms of Service</Link>
             <Link href="/responsible-gambling" style={styles.footerLink}>Responsible Gambling</Link>
