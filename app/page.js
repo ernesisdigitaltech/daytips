@@ -54,6 +54,7 @@ function HomePageInner() {
 
   const [user, setUser] = useState(null)
   const [coins, setCoins] = useState(null)
+  const [isPro, setIsPro] = useState(false)
   const [expandedLeagues, setExpandedLeagues] = useState(new Set())
 
   // Start fresh (all multi-fixture leagues folded) whenever the selected day changes
@@ -107,13 +108,20 @@ function HomePageInner() {
           .eq('user_id', currentUser.id),
         supabase
           .from('profiles')
-          .select('coins')
+          .select('coins, subscription_tier, subscription_expires_at')
           .eq('id', currentUser.id)
           .single(),
       ])
 
       if (unlocks) setUnlockedIds(new Set(unlocks.map((u) => u.fixture_id)))
-      if (profile) setCoins(profile.coins)
+      if (profile) {
+        setCoins(profile.coins)
+        const proActive =
+          profile.subscription_tier === 'pro' &&
+          profile.subscription_expires_at &&
+          new Date(profile.subscription_expires_at) > new Date()
+        setIsPro(proActive)
+      }
     }
 
     setAllFixtures(fixturesResult.data)
@@ -268,7 +276,7 @@ function HomePageInner() {
                 }}
               >
                 {league.fixtures.map((fx) => {
-                  const isLocked = fx.is_premium && !unlockedIds.has(fx.id) && !fx.admin_archived
+                  const isLocked = fx.is_premium && !unlockedIds.has(fx.id) && !fx.admin_archived && !isPro
 
                   return (
                     <Link key={fx.id} href={`/fixtures/${fx.id}?from=${selectedDateKey}`} style={styles.fixtureLink}>

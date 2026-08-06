@@ -26,6 +26,8 @@ function DashboardPageInner() {
   const [fullName, setFullName] = useState(null)
   const [subscriptionTier, setSubscriptionTier] = useState('free')
   const [subscriptionExpires, setSubscriptionExpires] = useState(null)
+  const [countdownText, setCountdownText] = useState('')
+  const [expiringSoon, setExpiringSoon] = useState(false)
   const [loading, setLoading] = useState(true)
   const [claiming, setClaiming] = useState(false)
   const [message, setMessage] = useState('')
@@ -90,13 +92,41 @@ function DashboardPageInner() {
     setLoading(false)
   }
 
-  const todayStr = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Africa/Lagos',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date())
+  const todayStr = new Date().toISOString().split('T')[0]
   const alreadyClaimedToday = lastClaim === todayStr
+
+  // Live countdown to subscription expiry, refreshed every minute
+  useEffect(() => {
+    if (subscriptionTier !== 'pro' || !subscriptionExpires) {
+      setCountdownText('')
+      return
+    }
+
+    function updateCountdown() {
+      const diffMs = new Date(subscriptionExpires) - new Date()
+      if (diffMs <= 0) {
+        setCountdownText('')
+        return
+      }
+      const totalMinutes = Math.floor(diffMs / 60000)
+      const days = Math.floor(totalMinutes / (60 * 24))
+      const hours = Math.floor((totalMinutes % (60 * 24)) / 60)
+      const minutes = totalMinutes % 60
+      setExpiringSoon(days < 1)
+
+      if (days > 0) {
+        setCountdownText(`${days}d ${hours}h remaining`)
+      } else if (hours > 0) {
+        setCountdownText(`${hours}h ${minutes}m remaining`)
+      } else {
+        setCountdownText(`${minutes}m remaining`)
+      }
+    }
+
+    updateCountdown()
+    const interval = setInterval(updateCountdown, 60000)
+    return () => clearInterval(interval)
+  }, [subscriptionTier, subscriptionExpires])
 
   async function handleClaim() {
     setClaiming(true)
@@ -160,19 +190,31 @@ function DashboardPageInner() {
         )}
 
         {subscriptionTier === 'pro' && subscriptionExpires && new Date(subscriptionExpires) > new Date() && (
-          <div style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            background: 'rgba(212,160,23,0.12)',
-            border: '1px solid rgba(212,160,23,0.3)',
-            borderRadius: 999,
-            padding: '4px 12px',
-            fontSize: 12,
-            fontWeight: 700,
-            color: '#D4A017',
-          }}>
-            ✓ Pro member
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(212,160,23,0.12)',
+              border: '1px solid rgba(212,160,23,0.3)',
+              borderRadius: 999,
+              padding: '4px 12px',
+              fontSize: 12,
+              fontWeight: 700,
+              color: '#D4A017',
+            }}>
+              ✓ Pro member
+            </div>
+            {countdownText && (
+              <div style={{
+                fontSize: 12,
+                color: expiringSoon ? '#E0665A' : '#F7F5EF99',
+                fontWeight: expiringSoon ? 700 : 400,
+                fontFamily: 'IBM Plex Mono, monospace',
+              }}>
+                {expiringSoon ? '⚠ ' : ''}{countdownText}
+              </div>
+            )}
           </div>
         )}
 
