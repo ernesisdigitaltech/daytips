@@ -3,9 +3,10 @@
   "appName": "DayTips",
   "webDir": "www",
   "server": {
-    "url": "https://getdaytips.com",
+    "url": "https://www.getdaytips.com",
     "cleartext": false,
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "allowNavigation": ["getdaytips.com", "*.getdaytips.com"]
   },
   "android": {
     "allowMixedContent": false
