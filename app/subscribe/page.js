@@ -227,7 +227,7 @@ function SubscribePageInner() {
 
         <p style={styles.contactNote}>
           Need help or have a question? Email us at{' '}
-          <a href="mailto:dominicernest38@gmail.com" style={styles.contactLink}>dominicernest38@gmail.com</a>
+          <a href="mailto:supportdaytips@gmail.com" style={styles.contactLink}>supportdaytips@gmail.com</a>
         </p>
       </main>
     </div>
