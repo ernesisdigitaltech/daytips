@@ -171,8 +171,8 @@ function SubscribePageInner() {
           <CryptoBox address={option.walletAddress} />
         ) : (
           <div style={styles.planGrid}>
-            <PayButton label="Weekly" link={option.links.weekly} currency={option.currency} />
-            <PayButton label="Monthly" link={option.links.monthly} currency={option.currency} badge="Best value" />
+            <PayButton label="Weekly" link={option.links.weekly} currency={option.currency} price={option.prices?.weekly} />
+            <PayButton label="Monthly" link={option.links.monthly} currency={option.currency} price={option.prices?.monthly} badge="Best value" />
           </div>
         )}
 
@@ -206,8 +206,8 @@ function SubscribePageInner() {
           <CryptoBox address={option.walletAddress} />
         ) : (
           <div style={styles.planGrid}>
-            <PayButton label="20 coins" link={option.links.coins20} currency={option.currency} />
-            <PayButton label="50 coins" link={option.links.coins50} currency={option.currency} />
+            <PayButton label="20 coins" link={option.links.coins20} currency={option.currency} price={option.prices?.coins20} />
+            <PayButton label="50 coins" link={option.links.coins50} currency={option.currency} price={option.prices?.coins50} />
           </div>
         )}
 
@@ -234,7 +234,7 @@ function SubscribePageInner() {
   )
 }
 
-function PayButton({ label, link, currency, badge }) {
+function PayButton({ label, link, currency, price, badge }) {
   const real = isRealLink(link)
   return (
     <a
@@ -249,7 +249,9 @@ function PayButton({ label, link, currency, badge }) {
     >
       {badge && real && <div style={styles.planBadge}>{badge}</div>}
       <div style={styles.planLabel}>{label}</div>
-      <div style={styles.planPrice}>{real ? `Pay in ${currency}` : 'Coming soon'}</div>
+      <div style={styles.planPrice}>
+        {real ? (price || `Pay in ${currency}`) : 'Coming soon'}
+      </div>
       {real && <div style={styles.planCta}>Continue →</div>}
     </a>
   )
