@@ -6,7 +6,10 @@
     "dev": "next dev --webpack",
     "build": "next build --webpack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "sync:android": "npx cap sync android",
+    "build:android": "npx cap copy android && npx cap update android",
+    "open:android": "npx cap open android"
   },
   "dependencies": {
     "@capacitor/android": "^8.4.2",
@@ -16,9 +19,13 @@
     "@capacitor/status-bar": "^8.0.3",
     "@supabase/ssr": "^0.12.1",
     "@supabase/supabase-js": "^2.110.4",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
     "next": "16.2.10",
+    "qrcode": "^1.5.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "speakeasy": "^2.0.0"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
