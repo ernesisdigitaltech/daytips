@@ -151,18 +151,32 @@ function HomePageInner() {
 
     const groups = {}
     for (const fixture of dayFixtures) {
-      const key = `${fixture.leagues.country}|${fixture.leagues.name}`
+      const fxIsLocked =
+        fixture.is_premium && !unlockedIds.has(fixture.id) && !fixture.admin_archived && !isPro
+
+      // Locked fixtures never reveal their real league/country — bucket them
+      // together generically instead, regardless of which league they're from.
+      const key = fxIsLocked ? '__locked__' : `${fixture.leagues.country}|${fixture.leagues.name}`
       if (!groups[key]) {
-        groups[key] = { country: fixture.leagues.country, name: fixture.leagues.name, fixtures: [] }
+        groups[key] = fxIsLocked
+          ? { country: '', name: '🔒 Locked Fixtures', isLockedGroup: true, fixtures: [] }
+          : { country: fixture.leagues.country, name: fixture.leagues.name, isLockedGroup: false, fixtures: [] }
       }
       groups[key].fixtures.push(fixture)
     }
 
-    return Object.values(groups).sort((a, b) => {
-      if (a.country !== b.country) return a.country.localeCompare(b.country)
-      return a.name.localeCompare(b.name)
-    })
-  }, [allFixtures, selectedDateKey])
+    const sorted = Object.values(groups)
+      .filter((g) => !g.isLockedGroup)
+      .sort((a, b) => {
+        if (a.country !== b.country) return a.country.localeCompare(b.country)
+        return a.name.localeCompare(b.name)
+      })
+
+    // Locked bucket always goes last, regardless of alphabetical order
+    if (groups['__locked__']) sorted.push(groups['__locked__'])
+
+    return sorted
+  }, [allFixtures, selectedDateKey, unlockedIds, isPro])
 
   return (
     <div style={styles.body}>
@@ -257,7 +271,7 @@ function HomePageInner() {
                 style={{ ...styles.leagueHeader, cursor: foldable ? 'pointer' : 'default' }}
                 onClick={() => foldable && toggleLeague(leagueKey)}
               >
-                <span style={styles.leagueCountry}>{league.country}</span>
+                {league.country && <span style={styles.leagueCountry}>{league.country}</span>}
                 <span style={styles.leagueName}>{league.name}</span>
                 {foldable && (
                   <span style={styles.leagueMeta}>
@@ -339,6 +353,10 @@ function HomePageInner() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>D</div>
+            <div style={styles.logoText}>DayTips</div>
+          </div>
           <div style={styles.footerLinks}>
             <Link href="/download" style={styles.footerLink}>Get the App</Link>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>

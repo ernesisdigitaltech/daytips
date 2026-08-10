@@ -143,7 +143,7 @@ function FixturePageInner() {
 
       <main style={styles.main}>
         <div style={styles.leagueTag}>
-          {fixture.leagues.country} — {fixture.leagues.name}
+          {isLocked ? '🔒 League hidden until unlocked' : `${fixture.leagues.country} — ${fixture.leagues.name}`}
         </div>
 
         <h1 style={styles.matchTitle}>
