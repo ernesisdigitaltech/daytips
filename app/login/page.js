@@ -17,6 +17,7 @@ export default function LoginPage() {
 function LoginPageInner() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [twoFactorCode, setTwoFactorCode] = useState('')  // NEW: 2FA code
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const router = useRouter()
@@ -28,6 +29,45 @@ function LoginPageInner() {
     setLoading(true)
     setMessage('')
 
+    // STEP 1: Try admin login with 2FA first
+    try {
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email, 
+          password, 
+          twoFactorCode 
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        // Admin login successful with 2FA
+        localStorage.setItem('adminToken', data.token)
+        setLoading(false)
+        router.push('/admin')
+        return
+      } else if (response.status === 403 || response.status === 400) {
+        // Admin-specific error (not admin, or 2FA not set up)
+        // Try regular user login instead
+        await regularUserLogin()
+        return
+      } else {
+        // Other error from admin API
+        setMessage(data.error || 'Login failed')
+        setLoading(false)
+        return
+      }
+    } catch (error) {
+      // Admin API failed, fallback to regular user login
+      await regularUserLogin()
+    }
+  }
+
+  // Regular user login (no 2FA)
+  async function regularUserLogin() {
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -84,6 +124,23 @@ function LoginPageInner() {
               required
               className={sd.input}
             />
+          </div>
+
+          {/* NEW: 2FA Code field - only shown if needed */}
+          <div className={sd.field}>
+            <label className={sd.fieldLabel} htmlFor="2fa">2FA Code</label>
+            <input
+              id="2fa"
+              type="text"
+              placeholder="Enter 6-digit code (admin only)"
+              value={twoFactorCode}
+              onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
+              maxLength="6"
+              className={sd.input}
+            />
+            <p style={{ fontSize: '12px', color: '#8B9A92', marginTop: '4px' }}>
+              Only required for admin accounts
+            </p>
           </div>
 
           <button
