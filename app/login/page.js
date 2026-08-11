@@ -25,81 +25,63 @@ function LoginPageInner() {
   const searchParams = useSearchParams()
   const justSignedUp = searchParams.get('justSignedUp') === '1'
 
-  // HARDCODED ADMIN EMAIL
   const ADMIN_EMAIL = 'dominicernest38@gmail.com'
 
-  // STEP 1: Check if user is admin
   async function handleInitialLogin(e) {
     e.preventDefault()
     setLoading(true)
     setMessage('')
     setShow2FA(false)
 
-    try {
-      // Check if this is the admin email
-      if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-        console.log('✅ Admin email detected - showing 2FA')
-        setShow2FA(true)
-        setLoading(false)
-        return
-      }
-
-      // Not admin - regular login
-      console.log('👤 Regular user - logging in')
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
+    if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      setShow2FA(true)
       setLoading(false)
+      return
+    }
 
-      if (error) {
-        setMessage(error.message)
-      } else {
-        router.push('/')
-      }
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-    } catch (error) {
-      setMessage('An error occurred. Please try again.')
-      setLoading(false)
+    setLoading(false)
+
+    if (error) {
+      setMessage(error.message)
+    } else {
+      router.push('/')
     }
   }
 
-  // STEP 2: Complete login with 2FA (for admin)
   async function handle2FALogin(e) {
     e.preventDefault()
     setLoading(true)
     setMessage('')
 
     if (twoFactorCode.length !== 6) {
-      setMessage('Please enter a 6-digit 2FA code')
+      setMessage('Please enter a 6-digit code')
       setLoading(false)
       return
     }
 
     try {
-      const response = await fetch('/api/admin/login', {
+      const response = await fetch('/api/admin-login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-          twoFactorCode: twoFactorCode
-        })
+        body: JSON.stringify({ email, password, twoFactorCode })
       })
 
       const data = await response.json()
 
       if (response.ok) {
         localStorage.setItem('adminToken', data.token)
-        setLoading(false)
         router.push('/admin')
       } else {
-        setMessage(data.error || 'Invalid 2FA code')
+        setMessage(data.error || 'Login failed')
         setLoading(false)
       }
     } catch (error) {
-      setMessage('An error occurred. Please try again.')
+      setMessage('An error occurred')
       setLoading(false)
     }
   }
@@ -137,12 +119,6 @@ function LoginPageInner() {
             : 'Log in to see today\'s verdicts.'
           }
         </p>
-
-        {justSignedUp && !show2FA && (
-          <p className={sd.authSuccess} style={{ textAlign: 'center', marginBottom: '1rem' }}>
-            Account created — log in to get started.
-          </p>
-        )}
 
         <form onSubmit={handleSubmit}>
           {!show2FA ? (
@@ -213,7 +189,7 @@ function LoginPageInner() {
                   required
                 />
                 <p style={{ fontSize: '12px', color: '#8B9A92', marginTop: '4px' }}>
-                  Enter 123456 for test mode
+                  Enter any 6-digit code
                 </p>
               </div>
 
@@ -246,12 +222,6 @@ function LoginPageInner() {
         </form>
 
         {message && <p className={sd.authError}>{message}</p>}
-
-        {!show2FA && (
-          <p className={sd.authFooter}>
-            Don't have an account? <Link href="/signup" className={sd.linkGold}>Sign up</Link>
-          </p>
-        )}
       </div>
     </div>
   )
