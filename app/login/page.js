@@ -20,8 +20,7 @@ function LoginPageInner() {
   const [twoFactorCode, setTwoFactorCode] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
-  const [show2FA, setShow2FA] = useState(false)  // NEW: Controls 2FA visibility
-  const [adminEmail, setAdminEmail] = useState('') // NEW: Store admin email
+  const [show2FA, setShow2FA] = useState(false)
   const router = useRouter()
   const searchParams = useSearchParams()
   const justSignedUp = searchParams.get('justSignedUp') === '1'
@@ -33,8 +32,8 @@ function LoginPageInner() {
     setMessage('')
     setShow2FA(false)
 
-    // First, check if this is an admin account
     try {
+      // Check if this email is an admin
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('is_admin')
@@ -42,17 +41,17 @@ function LoginPageInner() {
         .single()
 
       if (error) {
-        // User not found or error - try regular login
+        // User not found - try regular login
         await regularUserLogin()
         return
       }
 
-      if (profile.is_admin) {
-        // Admin account - show 2FA field
-        setAdminEmail(email)
+      if (profile && profile.is_admin === true) {
+        // Admin account - STOP HERE and show 2FA
         setShow2FA(true)
         setLoading(false)
         setMessage('Enter your 2FA code to continue')
+        return // IMPORTANT: Stop execution here
       } else {
         // Regular user - login normally
         await regularUserLogin()
@@ -69,12 +68,18 @@ function LoginPageInner() {
     setLoading(true)
     setMessage('')
 
+    if (twoFactorCode.length !== 6) {
+      setMessage('Please enter a 6-digit 2FA code')
+      setLoading(false)
+      return
+    }
+
     try {
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          email: adminEmail,
+          email: email,
           password, 
           twoFactorCode 
         })
@@ -127,6 +132,7 @@ function LoginPageInner() {
     setShow2FA(false)
     setMessage('')
     setTwoFactorCode('')
+    setLoading(false)
   }
 
   return (
