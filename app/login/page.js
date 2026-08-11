@@ -25,8 +25,10 @@ function LoginPageInner() {
   const searchParams = useSearchParams()
   const justSignedUp = searchParams.get('justSignedUp') === '1'
 
+  // HARDCODED ADMIN EMAIL
   const ADMIN_EMAIL = 'dominicernest38@gmail.com'
 
+  // STEP 1: Check if user is admin
   async function handleInitialLogin(e) {
     e.preventDefault()
     setLoading(true)
@@ -34,6 +36,7 @@ function LoginPageInner() {
     setShow2FA(false)
 
     try {
+      // Check if this is the admin email
       if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
         console.log('✅ Admin email detected - showing 2FA')
         setShow2FA(true)
@@ -41,6 +44,7 @@ function LoginPageInner() {
         return
       }
 
+      // Not admin - regular login
       console.log('👤 Regular user - logging in')
       const { error } = await supabase.auth.signInWithPassword({
         email,
@@ -61,6 +65,7 @@ function LoginPageInner() {
     }
   }
 
+  // STEP 2: Complete login with 2FA (for admin)
   async function handle2FALogin(e) {
     e.preventDefault()
     setLoading(true)
@@ -73,17 +78,6 @@ function LoginPageInner() {
     }
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-
-      if (error) {
-        setMessage(error.message)
-        setLoading(false)
-        return
-      }
-
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -94,19 +88,17 @@ function LoginPageInner() {
         })
       })
 
-      const data2 = await response.json()
+      const data = await response.json()
 
       if (response.ok) {
-        localStorage.setItem('adminToken', data2.token)
+        localStorage.setItem('adminToken', data.token)
         setLoading(false)
         router.push('/admin')
       } else {
-        await supabase.auth.signOut()
-        setMessage(data2.error || 'Invalid 2FA code')
+        setMessage(data.error || 'Invalid 2FA code')
         setLoading(false)
       }
     } catch (error) {
-      await supabase.auth.signOut()
       setMessage('An error occurred. Please try again.')
       setLoading(false)
     }
