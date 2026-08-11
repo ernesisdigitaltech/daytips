@@ -21,14 +21,13 @@ function LoginPageInner() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [step, setStep] = useState(1) // 1 = email/password, 2 = security question
+  const [securityQuestion, setSecurityQuestion] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const justSignedUp = searchParams.get('justSignedUp') === '1'
 
-  // ✅ HARDCODED ADMIN CREDENTIALS
   const ADMIN_EMAIL = 'dominicernest38@gmail.com'
   const SECURITY_QUESTION = 'ane bhora ete-ete-anum'
-  const SECURITY_ANSWER = 'Ekop'
 
   // STEP 1: Check if admin
   const handleStep1 = async (e) => {
@@ -38,6 +37,20 @@ function LoginPageInner() {
 
     // Check if this is the admin email
     if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+      // Check if security is set up in database
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('security_answer_hash')
+        .eq('email', email)
+        .single()
+
+      if (error || !data?.security_answer_hash) {
+        setMessage('Security not set up. Contact administrator.')
+        setLoading(false)
+        return
+      }
+
+      setSecurityQuestion(SECURITY_QUESTION)
       setStep(2)
       setLoading(false)
       return
@@ -58,7 +71,7 @@ function LoginPageInner() {
     }
   }
 
-  // STEP 2: Verify security answer
+  // STEP 2: Verify security answer via API
   const handleStep2 = async (e) => {
     e.preventDefault()
     setLoading(true)
@@ -70,39 +83,52 @@ function LoginPageInner() {
       return
     }
 
-    // ✅ Check if answer matches (case insensitive)
-    if (securityAnswer.toLowerCase() === SECURITY_ANSWER.toLowerCase()) {
-      // ✅ Correct! Login as admin
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
+    try {
+      // Call API to verify answer (answer NEVER exposed to browser)
+      const response = await fetch('/api/admin-verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: email,
+          answer: securityAnswer
+        })
       })
 
-      if (error) {
-        setMessage(error.message)
-        setLoading(false)
-        return
-      }
+      const data = await response.json()
 
-      if (data.user) {
-        const token = Buffer.from(
-          JSON.stringify({
-            userId: data.user.id,
-            email: email,
-            isAdmin: true,
-            timestamp: Date.now()
-          })
-        ).toString('base64')
+      if (response.ok) {
+        // ✅ Answer correct - login with Supabase
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        })
 
-        localStorage.setItem('adminToken', token)
-        setLoading(false)
-        router.push('/admin')
+        if (authError) {
+          setMessage('Invalid password')
+          setLoading(false)
+          return
+        }
+
+        if (authData.user) {
+          const token = Buffer.from(
+            JSON.stringify({
+              userId: authData.user.id,
+              email: email,
+              isAdmin: true,
+              timestamp: Date.now()
+            })
+          ).toString('base64')
+
+          localStorage.setItem('adminToken', token)
+          setLoading(false)
+          router.push('/admin')
+        }
       } else {
-        setMessage('Error logging in')
+        setMessage(data.error || 'Incorrect answer')
         setLoading(false)
       }
-    } else {
-      setMessage('❌ Incorrect security answer')
+    } catch (error) {
+      setMessage('Error verifying answer')
       setLoading(false)
     }
   }
