@@ -98,6 +98,8 @@ function HomePageInner() {
     }
 
     const currentUser = userResult.data.user
+    let isAdmin = false
+
     if (currentUser) {
       setUser(currentUser)
 
@@ -108,7 +110,7 @@ function HomePageInner() {
           .eq('user_id', currentUser.id),
         supabase
           .from('profiles')
-          .select('coins, subscription_tier, subscription_expires_at')
+          .select('coins, subscription_tier, subscription_expires_at, is_admin')
           .eq('id', currentUser.id)
           .single(),
       ])
@@ -116,12 +118,23 @@ function HomePageInner() {
       if (unlocks) setUnlockedIds(new Set(unlocks.map((u) => u.fixture_id)))
       if (profile) {
         setCoins(profile.coins)
+        isAdmin = !!profile.is_admin
         const proActive =
           profile.subscription_tier === 'pro' &&
           profile.subscription_expires_at &&
           new Date(profile.subscription_expires_at) > new Date()
         setIsPro(proActive)
       }
+    }
+
+    // Record a page view for this visit — logged-in non-admins and
+    // anonymous visitors both count; admin visits never do.
+    if (!isAdmin) {
+      supabase.from('page_views').insert({
+        user_id: currentUser ? currentUser.id : null,
+      }).then(({ error }) => {
+        if (error) console.error('Page view tracking failed:', error)
+      })
     }
 
     setAllFixtures(fixturesResult.data)
