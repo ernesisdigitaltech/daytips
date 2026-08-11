@@ -21,11 +21,11 @@ function LoginPageInner() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [step, setStep] = useState(1) // 1 = email/password, 2 = security question
-  const [securityQuestion, setSecurityQuestion] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
   const justSignedUp = searchParams.get('justSignedUp') === '1'
 
+  // ✅ HARDCODED ADMIN CREDENTIALS (No database check needed!)
   const ADMIN_EMAIL = 'dominicernest38@gmail.com'
   const SECURITY_QUESTION = 'ane bhora ete-ete-anum'
 
@@ -37,20 +37,7 @@ function LoginPageInner() {
 
     // Check if this is the admin email
     if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-      // Check if security is set up in database
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('security_answer_hash')
-        .eq('email', email)
-        .single()
-
-      if (error || !data?.security_answer_hash) {
-        setMessage('Security not set up. Contact administrator.')
-        setLoading(false)
-        return
-      }
-
-      setSecurityQuestion(SECURITY_QUESTION)
+      // ✅ IMMEDIATELY show the security question - NO database check!
       setStep(2)
       setLoading(false)
       return
@@ -84,7 +71,7 @@ function LoginPageInner() {
     }
 
     try {
-      // Call API to verify answer (answer NEVER exposed to browser)
+      // Call API to verify answer
       const response = await fetch('/api/admin-verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
