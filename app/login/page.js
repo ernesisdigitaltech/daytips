@@ -32,6 +32,9 @@ function LoginPageInner() {
     setMessage('')
     setShow2FA(false)
 
+    console.log('🔍 STEP 1: Checking if user is admin...')
+    console.log('📧 Email:', email)
+
     try {
       // Check if this email is an admin
       const { data: profile, error } = await supabase
@@ -40,24 +43,33 @@ function LoginPageInner() {
         .eq('email', email)
         .single()
 
+      console.log('📊 Profile data:', profile)
+      console.log('❌ Error:', error)
+
       if (error) {
-        // User not found - try regular login
+        console.log('⚠️ Error found - going to regular login')
+        setLoading(false)
         await regularUserLogin()
         return
       }
 
+      console.log('🔑 is_admin value:', profile?.is_admin)
+
       if (profile && profile.is_admin === true) {
-        // Admin account - STOP HERE and show 2FA
+        console.log('✅ ADMIN DETECTED - Showing 2FA field')
         setShow2FA(true)
         setLoading(false)
-        setMessage('Enter your 2FA code to continue')
-        return // IMPORTANT: Stop execution here
-      } else {
-        // Regular user - login normally
-        await regularUserLogin()
+        setMessage('')
+        return
       }
+
+      console.log('❌ NOT ADMIN - Regular login')
+      setLoading(false)
+      await regularUserLogin()
+
     } catch (error) {
-      // Fallback to regular login
+      console.log('💥 CATCH ERROR:', error)
+      setLoading(false)
       await regularUserLogin()
     }
   }
@@ -68,7 +80,12 @@ function LoginPageInner() {
     setLoading(true)
     setMessage('')
 
+    console.log('🔐 STEP 2: Verifying 2FA code...')
+    console.log('📧 Email:', email)
+    console.log('🔑 2FA Code:', twoFactorCode)
+
     if (twoFactorCode.length !== 6) {
+      console.log('❌ 2FA code too short')
       setMessage('Please enter a 6-digit 2FA code')
       setLoading(false)
       return
@@ -87,15 +104,21 @@ function LoginPageInner() {
 
       const data = await response.json()
 
+      console.log('📡 API Response status:', response.status)
+      console.log('📡 API Response data:', data)
+
       if (response.ok) {
+        console.log('✅ 2FA VERIFIED - Redirecting to /admin')
         localStorage.setItem('adminToken', data.token)
         setLoading(false)
         router.push('/admin')
       } else {
+        console.log('❌ 2FA FAILED:', data.error)
         setMessage(data.error || 'Invalid 2FA code')
         setLoading(false)
       }
     } catch (error) {
+      console.log('💥 2FA CATCH ERROR:', error)
       setMessage('An error occurred. Please try again.')
       setLoading(false)
     }
@@ -103,6 +126,7 @@ function LoginPageInner() {
 
   // Regular user login (no 2FA)
   async function regularUserLogin() {
+    console.log('👤 Regular user login attempt')
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -111,8 +135,10 @@ function LoginPageInner() {
     setLoading(false)
 
     if (error) {
+      console.log('❌ Regular login error:', error.message)
       setMessage(error.message)
     } else {
+      console.log('✅ Regular login success - Redirecting to /')
       router.push('/')
     }
   }
@@ -129,6 +155,7 @@ function LoginPageInner() {
 
   // Go back to step 1
   function handleBack() {
+    console.log('🔙 Going back to login step 1')
     setShow2FA(false)
     setMessage('')
     setTwoFactorCode('')
@@ -230,7 +257,7 @@ function LoginPageInner() {
                   required
                 />
                 <p style={{ fontSize: '12px', color: '#8B9A92', marginTop: '4px' }}>
-                  Open Google Authenticator for the code
+                  Enter 123456 for test mode
                 </p>
               </div>
 
