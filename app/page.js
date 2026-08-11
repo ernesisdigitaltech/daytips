@@ -366,10 +366,6 @@ function HomePageInner() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
-          <div style={styles.logo}>
-            <div style={styles.logoMark}>D</div>
-            <div style={styles.logoText}>DayTips</div>
-          </div>
           <div style={styles.footerLinks}>
             <Link href="/download" style={styles.footerLink}>Get the App</Link>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>

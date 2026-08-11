@@ -120,6 +120,21 @@ export default function AdminDashboard() {
             <h3>Purchase Claims</h3>
           </div>
         </Link>
+
+        {/* New: Security Question Setup */}
+        <Link href="/admin/setup-security" style={{ textDecoration: 'none' }}>
+          <div style={{ 
+            background: 'rgba(212,160,23,0.1)', 
+            padding: '30px', 
+            borderRadius: '12px', 
+            textAlign: 'center', 
+            color: '#F7F5EF',
+            border: '1px solid #D4A017'
+          }}>
+            <div style={{ fontSize: '40px' }}>🔐</div>
+            <h3>Security Setup</h3>
+          </div>
+        </Link>
       </div>
     </div>
   )
