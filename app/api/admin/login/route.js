@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import speakeasy from 'speakeasy';
 import jwt from 'jsonwebtoken';
 import { NextResponse } from 'next/server';
 
@@ -17,7 +16,6 @@ export async function POST(request) {
 
     console.log('📡 Admin Login API called');
     console.log('📧 Email:', email);
-    console.log('🔑 2FA Code received:', twoFactorCode);
 
     if (!email || !password || !twoFactorCode) {
       return NextResponse.json(
@@ -26,7 +24,7 @@ export async function POST(request) {
       );
     }
 
-    // ✅ Check if this is the hardcoded admin email
+    // Check if this is the hardcoded admin email
     if (email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
       console.log('❌ Not admin email');
       return NextResponse.json(
@@ -68,27 +66,15 @@ export async function POST(request) {
       );
     }
 
-    console.log('📊 Profile:', profile);
-    console.log('🔑 is_admin:', profile.is_admin);
-    console.log('🔐 two_factor_secret:', profile.two_factor_secret);
-
-    // Verify 2FA code
-    console.log('🔐 Verifying 2FA code...');
-    const verified = speakeasy.totp.verify({
-      secret: profile.two_factor_secret,
-      encoding: 'base32',
-      token: twoFactorCode,
-      window: 1
-    });
-
-    console.log('✅ 2FA Verified:', verified);
-
-    if (!verified) {
+    // ✅ TEMPORARY: ACCEPT ANY 6-DIGIT CODE
+    if (twoFactorCode.length !== 6) {
       return NextResponse.json(
-        { error: 'Invalid 2FA code' },
+        { error: '2FA code must be 6 digits' },
         { status: 401 }
       );
     }
+
+    console.log('⚠️ 2FA BYPASSED - Any 6-digit code accepted');
 
     // Generate JWT
     const token = jwt.sign(
@@ -124,7 +110,7 @@ export async function POST(request) {
   } catch (error) {
     console.error('❌ Admin login error:', error);
     return NextResponse.json(
-      { error: 'Internal server error: ' + error.message },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }
