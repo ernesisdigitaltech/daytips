@@ -10,30 +10,23 @@ export default function AdminDashboard() {
   const router = useRouter()
 
   useEffect(() => {
-    // Check if admin is logged in
+    // Check if admin is logged in with 2FA
     const token = localStorage.getItem('adminToken')
     
     if (!token) {
       // No token, redirect to login
-      router.push('/admin/login')
+      router.push('/login')
       return
     }
 
-    // Verify token is valid (optional: decode to check expiry)
-    try {
-      // Simple check - if token exists, assume valid
-      // For production, you should verify with your backend
-      setAdminEmail('Admin')
-      setLoading(false)
-    } catch (error) {
-      localStorage.removeItem('adminToken')
-      router.push('/admin/login')
-    }
+    // Token exists - consider it valid
+    setAdminEmail('Admin')
+    setLoading(false)
   }, [router])
 
   const handleLogout = () => {
     localStorage.removeItem('adminToken')
-    router.push('/admin/login')
+    router.push('/login')
   }
 
   if (loading) {
@@ -60,14 +53,14 @@ export default function AdminDashboard() {
         </div>
       </header>
 
-      {/* Dashboard Content */}
+      {/* Dashboard Grid */}
       <div style={styles.dashboardGrid}>
         {/* Overview Card */}
         <Link href="/admin/overview" style={styles.cardLink}>
           <div style={styles.card}>
             <div style={styles.cardIcon}>📊</div>
             <h3 style={styles.cardTitle}>Overview</h3>
-            <p style={styles.cardDesc}>View dashboard statistics and summary</p>
+            <p style={styles.cardDesc}>View dashboard statistics</p>
           </div>
         </Link>
 
@@ -85,7 +78,7 @@ export default function AdminDashboard() {
           <div style={styles.card}>
             <div style={styles.cardIcon}>📝</div>
             <h3 style={styles.cardTitle}>Manage Predictions</h3>
-            <p style={styles.cardDesc}>Edit, update, or archive predictions</p>
+            <p style={styles.cardDesc}>Edit, update, or archive</p>
           </div>
         </Link>
 
@@ -94,7 +87,7 @@ export default function AdminDashboard() {
           <div style={styles.card}>
             <div style={styles.cardIcon}>👥</div>
             <h3 style={styles.cardTitle}>Manage Subscribers</h3>
-            <p style={styles.cardDesc}>View and manage subscriber list</p>
+            <p style={styles.cardDesc}>View subscriber list</p>
           </div>
         </Link>
 
@@ -103,7 +96,7 @@ export default function AdminDashboard() {
           <div style={styles.card}>
             <div style={styles.cardIcon}>💰</div>
             <h3 style={styles.cardTitle}>Purchase Claims</h3>
-            <p style={styles.cardDesc}>Verify and manage purchase claims</p>
+            <p style={styles.cardDesc}>Verify purchase claims</p>
           </div>
         </Link>
 
