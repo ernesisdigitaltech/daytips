@@ -268,7 +268,7 @@ function LoginPageInner() {
 
         {step === 1 && (
           <p className={sd.authFooter}>
-            Don't have an account? <Link href="/signup" className={sd.linkGold}>Sign up</Link>
+            Don't have an account yet? <Link href="/signup" className={sd.linkGold}>Sign up</Link>
           </p>
         )}
       </div>
