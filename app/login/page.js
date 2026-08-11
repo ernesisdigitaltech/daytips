@@ -21,25 +21,14 @@ function LoginPageInner() {
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [step, setStep] = useState(1) // 1 = email/password, 2 = security question
-  const [securityQuestion, setSecurityQuestion] = useState('')
-  const [attemptsLeft, setAttemptsLeft] = useState(5)
   const router = useRouter()
   const searchParams = useSearchParams()
   const justSignedUp = searchParams.get('justSignedUp') === '1'
 
+  // ✅ HARDCODED ADMIN CREDENTIALS
   const ADMIN_EMAIL = 'dominicernest38@gmail.com'
-
-  // Function to hide every 2nd word
-  function getPartialQuestion(fullQuestion) {
-    if (!fullQuestion) return ''
-    const words = fullQuestion.split(' ')
-    return words.map((word, index) => {
-      if (index % 2 === 1 && word.length > 2) {
-        return '*'.repeat(word.length)
-      }
-      return word
-    }).join(' ')
-  }
+  const SECURITY_QUESTION = 'ane bhora ete-ete-anum'
+  const SECURITY_ANSWER = 'Ekop'
 
   // STEP 1: Check if admin
   const handleStep1 = async (e) => {
@@ -49,20 +38,6 @@ function LoginPageInner() {
 
     // Check if this is the admin email
     if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
-      // Fetch security question from database
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('security_question')
-        .eq('email', email)
-        .single()
-
-      if (error || !data?.security_question) {
-        setMessage('No security question set. Please contact administrator.')
-        setLoading(false)
-        return
-      }
-
-      setSecurityQuestion(data.security_question)
       setStep(2)
       setLoading(false)
       return
@@ -95,64 +70,62 @@ function LoginPageInner() {
       return
     }
 
-    try {
-      const response = await fetch('/api/admin-verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: email,
-          answer: securityAnswer
-        })
+    // ✅ Check if answer matches (case insensitive)
+    if (securityAnswer.toLowerCase() === SECURITY_ANSWER.toLowerCase()) {
+      // ✅ Correct! Login as admin
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
 
-      const data = await response.json()
+      if (error) {
+        setMessage(error.message)
+        setLoading(false)
+        return
+      }
 
-      if (response.ok) {
-        // ✅ Correct answer! Login as admin
-        // Get user ID
-        const { data: userData } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        })
+      if (data.user) {
+        const token = Buffer.from(
+          JSON.stringify({
+            userId: data.user.id,
+            email: email,
+            isAdmin: true,
+            timestamp: Date.now()
+          })
+        ).toString('base64')
 
-        if (userData.user) {
-          const token = Buffer.from(
-            JSON.stringify({
-              userId: userData.user.id,
-              email: email,
-              isAdmin: true,
-              timestamp: Date.now()
-            })
-          ).toString('base64')
-
-          localStorage.setItem('adminToken', token)
-          setLoading(false)
-          router.push('/admin')
-        } else {
-          setMessage('Error logging in. Please try again.')
-          setLoading(false)
-        }
+        localStorage.setItem('adminToken', token)
+        setLoading(false)
+        router.push('/admin')
       } else {
-        setMessage(data.error || 'Incorrect answer')
-        if (data.attemptsLeft !== undefined) {
-          setAttemptsLeft(data.attemptsLeft)
-        }
+        setMessage('Error logging in')
         setLoading(false)
       }
-    } catch (error) {
-      setMessage('Error: ' + error.message)
+    } else {
+      setMessage('❌ Incorrect security answer')
       setLoading(false)
     }
+  }
+
+  // Hide every 2nd word in the question
+  function getPartialQuestion(fullQuestion) {
+    if (!fullQuestion) return ''
+    const words = fullQuestion.split(' ')
+    return words.map((word, index) => {
+      if (index % 2 === 1 && word.length > 2) {
+        return '*'.repeat(word.length)
+      }
+      return word
+    }).join(' ')
   }
 
   const goBack = () => {
     setStep(1)
     setMessage('')
     setSecurityAnswer('')
-    setAttemptsLeft(5)
   }
 
-  const partialQuestion = securityQuestion ? getPartialQuestion(securityQuestion) : ''
+  const partialQuestion = getPartialQuestion(SECURITY_QUESTION)
 
   return (
     <div className={sd.authPage}>
@@ -172,7 +145,7 @@ function LoginPageInner() {
           }
         </p>
 
-        {justSignedUp && !show2FA && step === 1 && (
+        {justSignedUp && step === 1 && (
           <p className={sd.authSuccess} style={{ textAlign: 'center', marginBottom: '1rem' }}>
             Account created — log in to get started.
           </p>
@@ -248,11 +221,6 @@ function LoginPageInner() {
                   className={sd.input}
                   autoFocus
                 />
-                {attemptsLeft < 5 && (
-                  <p style={{ fontSize: '12px', color: '#D4A017', marginTop: '4px' }}>
-                    ⚠️ {attemptsLeft} attempts remaining
-                  </p>
-                )}
               </div>
 
               <button
