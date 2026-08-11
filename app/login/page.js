@@ -25,7 +25,9 @@ function LoginPageInner() {
   const searchParams = useSearchParams()
   const justSignedUp = searchParams.get('justSignedUp') === '1'
 
-  // STEP 1: Check if user is admin
+  // ADMIN EMAIL - Hardcoded for now
+  const ADMIN_EMAIL = 'dominicernest38@gmail.com'
+
   async function handleInitialLogin(e) {
     e.preventDefault()
     setLoading(true)
@@ -33,41 +35,28 @@ function LoginPageInner() {
     setShow2FA(false)
 
     try {
-      // First, try to login with Supabase
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // Check if this is the admin email
+      if (email.toLowerCase() === ADMIN_EMAIL.toLowerCase()) {
+        console.log('✅ Admin email detected - showing 2FA')
+        setShow2FA(true)
+        setLoading(false)
+        return
+      }
+
+      // Not admin - regular login
+      console.log('👤 Regular user - logging in')
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       })
 
+      setLoading(false)
+
       if (error) {
         setMessage(error.message)
-        setLoading(false)
-        return
-      }
-
-      // Now check if this user is an admin
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('is_admin, two_factor_secret')
-        .eq('id', data.user.id)
-        .single()
-
-      if (profileError) {
-        // User exists but profile not found - regular user
+      } else {
         router.push('/')
-        return
       }
-
-      if (profile.is_admin === true) {
-        // Admin detected - show 2FA field
-        setShow2FA(true)
-        setLoading(false)
-        setMessage('Enter your 2FA code')
-        return
-      }
-
-      // Not admin - go to homepage
-      router.push('/')
 
     } catch (error) {
       setMessage('An error occurred. Please try again.')
@@ -75,7 +64,6 @@ function LoginPageInner() {
     }
   }
 
-  // STEP 2: Complete login with 2FA (for admin)
   async function handle2FALogin(e) {
     e.preventDefault()
     setLoading(true)
@@ -88,6 +76,19 @@ function LoginPageInner() {
     }
 
     try {
+      // First, login with Supabase to get the user
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        setMessage(error.message)
+        setLoading(false)
+        return
+      }
+
+      // Now verify 2FA with our API
       const response = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -98,23 +99,25 @@ function LoginPageInner() {
         })
       })
 
-      const data = await response.json()
+      const data2 = await response.json()
 
       if (response.ok) {
-        localStorage.setItem('adminToken', data.token)
+        localStorage.setItem('adminToken', data2.token)
         setLoading(false)
         router.push('/admin')
       } else {
-        setMessage(data.error || 'Invalid 2FA code')
+        // If 2FA fails, sign out the user
+        await supabase.auth.signOut()
+        setMessage(data2.error || 'Invalid 2FA code')
         setLoading(false)
       }
     } catch (error) {
+      await supabase.auth.signOut()
       setMessage('An error occurred. Please try again.')
       setLoading(false)
     }
   }
 
-  // Handle form submission based on step
   function handleSubmit(e) {
     e.preventDefault()
     if (show2FA) {
@@ -124,14 +127,11 @@ function LoginPageInner() {
     }
   }
 
-  // Go back to step 1
   function handleBack() {
     setShow2FA(false)
     setMessage('')
     setTwoFactorCode('')
     setLoading(false)
-    // Sign out from Supabase since we logged in earlier
-    supabase.auth.signOut()
   }
 
   return (
@@ -159,7 +159,6 @@ function LoginPageInner() {
         )}
 
         <form onSubmit={handleSubmit}>
-          {/* Step 1: Email & Password */}
           {!show2FA ? (
             <>
               <div className={sd.field}>
@@ -198,7 +197,6 @@ function LoginPageInner() {
               </button>
             </>
           ) : (
-            /* Step 2: 2FA Code */
             <>
               <div style={{
                 backgroundColor: 'rgba(212,160,23,0.1)',
