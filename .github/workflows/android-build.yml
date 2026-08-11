@@ -1,7 +1,7 @@
-name: Build Android APK
+name: Build Android AAB
 
 on:
-  workflow_dispatch:      # lets you trigger it manually from the Actions tab
+  workflow_dispatch:      # Manual trigger from Actions tab
   push:
     branches: [main]
 
@@ -38,12 +38,13 @@ jobs:
         working-directory: android
         run: chmod +x ./gradlew
 
-      - name: Build debug APK
+      # ✅ NEW: Build Release AAB
+      - name: Build release AAB
         working-directory: android
-        run: ./gradlew assembleDebug
+        run: ./gradlew bundleRelease
 
-      - name: Upload APK
+      - name: Upload AAB
         uses: actions/upload-artifact@v4
         with:
-          name: daytips-debug-apk
-          path: android/app/build/outputs/apk/debug/app-debug.apk
+          name: daytips-release-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
