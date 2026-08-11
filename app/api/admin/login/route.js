@@ -1,113 +1,192 @@
-import { createClient } from '@supabase/supabase-js';
-import speakeasy from 'speakeasy';
-import jwt from 'jsonwebtoken';
-import { NextResponse } from 'next/server';
+'use client';
 
-// Remove the global supabase initialization
-// Instead, create it inside the function
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
-export async function POST(request) {
-  try {
-    // Initialize Supabase INSIDE the function
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
+export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [twoFactorCode, setTwoFactorCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-    const { email, password, twoFactorCode } = await request.json();
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
 
-    if (!email || !password || !twoFactorCode) {
-      return NextResponse.json(
-        { error: 'Email, password, and 2FA code are required' },
-        { status: 400 }
-      );
+    try {
+      // Try admin login with 2FA
+      const response = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, twoFactorCode })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        localStorage.setItem('adminToken', data.token);
+        router.push('/admin');
+      } else {
+        setError(data.error || 'Login failed');
+      }
+    } catch (error) {
+      setError('An error occurred. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: email,
-      password: password
-    });
-
-    if (authError) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
-    }
-
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('id, email, is_admin, two_factor_secret')
-      .eq('id', authData.user.id)
-      .single();
-
-    if (profileError || !profile) {
-      return NextResponse.json(
-        { error: 'User profile not found' },
-        { status: 401 }
-      );
-    }
-
-    if (!profile.is_admin) {
-      return NextResponse.json(
-        { error: 'Access denied. Admin only.' },
-        { status: 403 }
-      );
-    }
-
-    if (!profile.two_factor_secret) {
-      return NextResponse.json(
-        { error: '2FA not set up. Please contact system administrator.' },
-        { status: 400 }
-      );
-    }
-
-    const verified = speakeasy.totp.verify({
-      secret: profile.two_factor_secret,
-      encoding: 'base32',
-      token: twoFactorCode,
-      window: 1
-    });
-
-    if (!verified) {
-      return NextResponse.json(
-        { error: 'Invalid 2FA code. Please check your Google Authenticator app.' },
-        { status: 401 }
-      );
-    }
-
-    const token = jwt.sign(
-      { 
-        userId: profile.id,
-        email: profile.email,
-        isAdmin: true,
-        authenticated: true,
-        twoFactorVerified: true
-      },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-
-    await supabase
-      .from('profiles')
-      .update({ last_login: new Date().toISOString() })
-      .eq('id', profile.id);
-
-    return NextResponse.json({
-      success: true,
-      token: token,
-      user: {
-        id: profile.id,
-        email: profile.email
-      },
-      message: 'Login successful'
-    });
-
-  } catch (error) {
-    console.error('Admin login error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
-  }
+  return (
+    <div style={styles.container}>
+      <div style={styles.card}>
+        <h1 style={styles.title}>DayTips</h1>
+        <p style={styles.subtitle}>Admin Login</p>
+        
+        {error && (
+          <div style={styles.errorBox}>
+            {error}
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit}>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              style={styles.input}
+              placeholder="admin@example.com"
+              required
+            />
+          </div>
+          
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              style={styles.input}
+              placeholder="Enter your password"
+              required
+            />
+          </div>
+          
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>2FA Code</label>
+            <input
+              type="text"
+              value={twoFactorCode}
+              onChange={(e) => setTwoFactorCode(e.target.value.replace(/\D/g, ''))}
+              style={styles.input}
+              placeholder="Enter 6-digit code"
+              maxLength="6"
+              required
+            />
+          </div>
+          
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              ...styles.button,
+              opacity: loading ? 0.7 : 1,
+              cursor: loading ? 'not-allowed' : 'pointer'
+            }}
+          >
+            {loading ? 'Logging in...' : 'Login'}
+          </button>
+        </form>
+        
+        <p style={styles.footer}>
+          Secure login with 2FA
+        </p>
+      </div>
+    </div>
+  );
 }
+
+const styles = {
+  container: {
+    minHeight: '100vh',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    background: '#0E1912',
+    padding: '20px',
+  },
+  card: {
+    background: 'rgba(247,245,239,0.05)',
+    padding: '40px',
+    borderRadius: '16px',
+    border: '1px solid rgba(247,245,239,0.12)',
+    maxWidth: '400px',
+    width: '100%',
+  },
+  title: {
+    textAlign: 'center',
+    marginBottom: '5px',
+    color: '#F7F5EF',
+    fontSize: '28px',
+    fontWeight: '700',
+  },
+  subtitle: {
+    textAlign: 'center',
+    color: '#8B9A92',
+    marginBottom: '24px',
+    fontSize: '14px',
+  },
+  errorBox: {
+    backgroundColor: 'rgba(166,58,46,0.2)',
+    color: '#A63A2E',
+    padding: '12px',
+    borderRadius: '8px',
+    marginBottom: '16px',
+    fontSize: '14px',
+    border: '1px solid #A63A2E',
+  },
+  inputGroup: {
+    marginBottom: '16px',
+  },
+  label: {
+    display: 'block',
+    marginBottom: '6px',
+    color: '#F7F5EF',
+    fontSize: '14px',
+    fontWeight: '500',
+  },
+  input: {
+    width: '100%',
+    padding: '12px',
+    borderRadius: '8px',
+    border: '1px solid rgba(247,245,239,0.12)',
+    background: 'rgba(247,245,239,0.05)',
+    color: '#F7F5EF',
+    fontSize: '14px',
+    boxSizing: 'border-box',
+    outline: 'none',
+  },
+  button: {
+    width: '100%',
+    padding: '12px',
+    backgroundColor: '#D4A017',
+    color: '#0E1912',
+    border: 'none',
+    borderRadius: '8px',
+    fontSize: '16px',
+    fontWeight: '600',
+    transition: 'background 0.3s',
+    marginTop: '8px',
+  },
+  footer: {
+    textAlign: 'center',
+    marginTop: '20px',
+    fontSize: '12px',
+    color: '#8B9A92',
+  },
+};
