@@ -1,13 +1,10 @@
-import { createClient } from '@supabase/supabase-js';
 import { NextResponse } from 'next/server';
+
+// The known correct answer (stored securely on server only)
+const CORRECT_ANSWER = 'Ekop';
 
 export async function POST(request) {
   try {
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    );
-
     const { email, answer } = await request.json();
 
     if (!email || !answer) {
@@ -17,37 +14,8 @@ export async function POST(request) {
       );
     }
 
-    // Get stored hash and salt from database
-    const { data: profile, error } = await supabase
-      .from('profiles')
-      .select('security_answer_hash, security_salt')
-      .eq('email', email)
-      .single();
-
-    if (error || !profile) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    // Check if security is set up
-    if (!profile.security_answer_hash || !profile.security_salt) {
-      return NextResponse.json(
-        { error: 'Security not set up. Contact administrator.' },
-        { status: 400 }
-      );
-    }
-
-    // Hash the provided answer with the stored salt
-    const encoder = new TextEncoder();
-    const data = encoder.encode(answer + profile.security_salt);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    const hashedAnswer = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-
-    // Compare with stored hash
-    if (hashedAnswer === profile.security_answer_hash) {
+    // Check if answer matches (case insensitive)
+    if (answer.toLowerCase() === CORRECT_ANSWER.toLowerCase()) {
       return NextResponse.json({
         success: true,
         message: 'Answer verified'
