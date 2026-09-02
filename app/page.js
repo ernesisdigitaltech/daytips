@@ -8,8 +8,7 @@ import { supabase } from '@/lib/supabaseClient'
 function formatDateKey(date) {
   // Use LOCAL calendar date components, not toISOString() (which is always
   // UTC) — otherwise fixtures can shift by a day depending on the viewer's
-  // timezone and the time of day, which was causing every fixture to
-  // display one day later than intended.
+  // timezone and the time of day.
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -32,16 +31,11 @@ function HomePageInner() {
   const [unlockedIds, setUnlockedIds] = useState(new Set())
   const [loading, setLoading] = useState(true)
 
-  // If arriving with ?date=YYYY-MM-DD (e.g. returning from a fixture page),
-  // restore that date instead of defaulting to today.
   const initialDateKey = (() => {
     const fromUrl = searchParams.get('date')
     return fromUrl && /^\d{4}-\d{2}-\d{2}$/.test(fromUrl) ? fromUrl : formatDateKey(new Date())
   })()
 
-  // Derive which 7-day window should be visible so the selected date's
-  // week is actually in view, not just the date itself being "selected"
-  // while scrolled off the visible calendar strip.
   const initialWeekOffset = (() => {
     const diffDays = Math.round(
       (new Date(initialDateKey) - new Date(formatDateKey(new Date()))) / (1000 * 60 * 60 * 24)
@@ -49,7 +43,7 @@ function HomePageInner() {
     return Math.round(diffDays / 7)
   })()
 
-  const [weekOffset, setWeekOffset] = useState(initialWeekOffset) // shifts the 7-day window by whole weeks
+  const [weekOffset, setWeekOffset] = useState(initialWeekOffset)
   const [selectedDateKey, setSelectedDateKey] = useState(initialDateKey)
 
   const [user, setUser] = useState(null)
@@ -57,7 +51,9 @@ function HomePageInner() {
   const [isPro, setIsPro] = useState(false)
   const [expandedLeagues, setExpandedLeagues] = useState(new Set())
 
-  // Start fresh (all multi-fixture leagues folded) whenever the selected day changes
+  const [unlockingId, setUnlockingId] = useState(null)
+  const [unlockError, setUnlockError] = useState({})
+
   useEffect(() => {
     setExpandedLeagues(new Set())
   }, [selectedDateKey])
@@ -127,8 +123,6 @@ function HomePageInner() {
       }
     }
 
-    // Record a page view for this visit — logged-in non-admins and
-    // anonymous visitors both count; admin visits never do.
     if (!isAdmin) {
       supabase.from('page_views').insert({
         user_id: currentUser ? currentUser.id : null,
@@ -141,11 +135,31 @@ function HomePageInner() {
     setLoading(false)
   }
 
-  // Build the 7 visible calendar days based on weekOffset
+  async function handleUnlock(fixtureId) {
+    setUnlockingId(fixtureId)
+    setUnlockError((prev) => ({ ...prev, [fixtureId]: '' }))
+
+    const { data, error } = await supabase.rpc('unlock_fixture', { p_fixture_id: fixtureId })
+
+    setUnlockingId(null)
+
+    if (error) {
+      setUnlockError((prev) => ({ ...prev, [fixtureId]: 'Something went wrong. Try again.' }))
+      return
+    }
+
+    if (data.success) {
+      setUnlockedIds((prev) => new Set(prev).add(fixtureId))
+      if (data.coins !== undefined) setCoins(data.coins)
+    } else {
+      setUnlockError((prev) => ({ ...prev, [fixtureId]: data.message }))
+    }
+  }
+
   const visibleDays = useMemo(() => {
     const days = []
     const base = new Date()
-    base.setDate(base.getDate() + weekOffset * 7 - 3) // center today when offset is 0
+    base.setDate(base.getDate() + weekOffset * 7 - 3)
     for (let i = 0; i < 7; i++) {
       const d = new Date(base)
       d.setDate(base.getDate() + i)
@@ -156,7 +170,6 @@ function HomePageInner() {
 
   const todayKey = formatDateKey(new Date())
 
-  // Group the fixtures for the selected day only, by league
   const fixturesByLeague = useMemo(() => {
     const dayFixtures = allFixtures.filter(
       (fx) => formatDateKey(new Date(fx.kickoff_time)) === selectedDateKey
@@ -167,8 +180,6 @@ function HomePageInner() {
       const fxIsLocked =
         fixture.is_premium && !unlockedIds.has(fixture.id) && !fixture.admin_archived && !isPro
 
-      // Locked fixtures never reveal their real league/country — bucket them
-      // together generically instead, regardless of which league they're from.
       const key = fxIsLocked ? '__locked__' : `${fixture.leagues.country}|${fixture.leagues.name}`
       if (!groups[key]) {
         groups[key] = fxIsLocked
@@ -185,7 +196,6 @@ function HomePageInner() {
         return a.name.localeCompare(b.name)
       })
 
-    // Locked bucket always goes last, regardless of alphabetical order
     if (groups['__locked__']) sorted.push(groups['__locked__'])
 
     return sorted
@@ -234,11 +244,10 @@ function HomePageInner() {
           <span style={styles.eyebrow}>Matchday Dossier</span>
           <h1 style={styles.h1}>Today's<br />Verdicts.</h1>
           <p style={styles.heroText}>
-            Every fixture analysed, rated, and stamped before kickoff.
+            Every fixture rated and stamped before kickoff.
           </p>
         </section>
 
-        {/* CALENDAR STRIP */}
         <div style={styles.calendarRow}>
           <button onClick={() => setWeekOffset(weekOffset - 1)} style={styles.calArrow}>‹</button>
           <div style={styles.calendar}>
@@ -297,67 +306,77 @@ function HomePageInner() {
               <div
                 style={{
                   overflow: 'hidden',
-                  maxHeight: isExpanded ? 4000 : 0,
+                  maxHeight: isExpanded ? 6000 : 0,
                   opacity: isExpanded ? 1 : 0,
                   transition: 'max-height 0.35s ease, opacity 0.25s ease',
                 }}
               >
                 {league.fixtures.map((fx) => {
                   const isLocked = fx.is_premium && !unlockedIds.has(fx.id) && !fx.admin_archived && !isPro
+                  const stampColor =
+                    fx.result === 'correct' ? '#6FBE8F' :
+                    fx.result === 'wrong' ? '#A63A2E' :
+                    '#D4A017' // pending — yellow/gold
 
                   return (
-                    <Link key={fx.id} href={`/fixtures/${fx.id}?from=${selectedDateKey}`} style={styles.fixtureLink}>
-                  <div style={styles.fixture}>
-                    <div style={styles.fxTime}>
-                      {fx.result === 'pending'
-                        ? '—'
-                        : new Date(fx.kickoff_time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
+                    <div key={fx.id} style={styles.fixture}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div>
+                          {isLocked ? (
+                            <span style={styles.hiddenTeams}>🔒 Teams hidden until unlocked</span>
+                          ) : (
+                            <>
+                              <span style={styles.teamName}>{fx.home_team}</span>
+                              <span style={styles.vs}> vs </span>
+                              <span style={styles.teamName}>{fx.away_team}</span>
+                              {fx.final_score && fx.result !== 'pending' && (
+                                <span style={styles.finalScore}>FT {fx.final_score}</span>
+                              )}
+                            </>
+                          )}
+                        </div>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div>
                         {isLocked ? (
-                          <span style={styles.hiddenTeams}>🔒 Teams hidden until unlocked</span>
+                          <div style={styles.unlockRow}>
+                            {!user ? (
+                              <Link href="/login" style={styles.unlockLink}>Log in to unlock</Link>
+                            ) : (
+                              <button
+                                onClick={() => handleUnlock(fx.id)}
+                                disabled={unlockingId === fx.id}
+                                style={styles.unlockBtn}
+                              >
+                                {unlockingId === fx.id ? 'Unlocking…' : '🔒 Unlock for 2 coins'}
+                              </button>
+                            )}
+                            {unlockError[fx.id] && (
+                              <span style={styles.unlockErrorText}>{unlockError[fx.id]}</span>
+                            )}
+                          </div>
                         ) : (
-                          <>
-                            <span style={styles.teamName}>{fx.home_team}</span>
-                            <span style={styles.vs}> vs </span>
-                            <span style={styles.teamName}>{fx.away_team}</span>
-                          </>
+                          <div style={styles.tipLine}>Tip: {fx.tip}</div>
                         )}
                       </div>
 
-                      {isLocked ? (
-                        <div style={styles.lockedPreview}>Unlock for 2 coins to reveal teams, tip, and analysis</div>
-                      ) : (
-                        <div style={styles.revealPrompt}>Tap to view tip &amp; analysis →</div>
-                      )}
-                    </div>
-
-                    {fx.result === 'pending' ? (
-                      <div style={styles.stampPending}>
-                        <div style={{ fontSize: 15, fontWeight: 600 }}>{fx.confidence_percent}%</div>
-                        <div style={{ fontSize: 7, color: '#8B9A92' }}>CONF.</div>
+                      <div style={{ ...styles.stamp, borderColor: stampColor, color: stampColor, borderStyle: fx.result === 'pending' ? 'dashed' : 'solid' }}>
+                        {fx.result === 'pending' ? (
+                          <>
+                            <div style={{ fontSize: 15, fontWeight: 600 }}>{fx.confidence_percent}%</div>
+                            <div style={{ fontSize: 7, color: '#8B9A92' }}>CONF.</div>
+                          </>
+                        ) : (
+                          <div style={{ fontWeight: 800, fontSize: 11 }}>
+                            {fx.result === 'correct' ? 'Correct' : 'Wrong'}
+                          </div>
+                        )}
                       </div>
-                    ) : (
-                      <div style={{
-                        ...styles.stampVerdict,
-                        borderColor: fx.result === 'correct' ? '#D4A017' : '#A63A2E',
-                        color: fx.result === 'correct' ? '#D4A017' : '#A63A2E',
-                      }}>
-                        <div style={{ fontWeight: 800, fontSize: 11 }}>
-                          {fx.result === 'correct' ? 'Correct' : 'Wrong'}
-                        </div>
-                      </div>
-                    )}
 
-                    <div style={styles.lock}>
-                      {fx.is_premium ? (isLocked ? '🔒 2' : '✓ Unlocked') : 'Free'}
+                      <div style={styles.lock}>
+                        {fx.is_premium ? (isLocked ? '🔒 2' : '✓ Unlocked') : 'Free'}
+                      </div>
                     </div>
-                  </div>
-                </Link>
-              )
-            })}
+                  )
+                })}
               </div>
             </div>
           )
@@ -366,6 +385,10 @@ function HomePageInner() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>D</div>
+            <div style={styles.logoText}>DayTips</div>
+          </div>
           <div style={styles.footerLinks}>
             <Link href="/download" style={styles.footerLink}>Get the App</Link>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
@@ -375,7 +398,7 @@ function HomePageInner() {
         </div>
 
         <p style={styles.footerNotice}>
-          DayTips provides football predictions and analysis for informational and entertainment purposes only.
+          DayTips provides football predictions for informational and entertainment purposes only.
           We do not accept bets or wagers. Tips are not guaranteed and should never be treated as financial advice.
           You must be 18 or older to use this service. If you choose to bet with a licensed operator based on
           information found here, please gamble responsibly.
@@ -416,18 +439,17 @@ const styles = {
   leagueName: { fontWeight: 700, fontSize: 22, flex: 1 },
   leagueMeta: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8B9A92' },
   chevron: { display: 'inline-block', transition: 'transform 0.25s ease', color: '#D4A017', fontSize: 14 },
-  fixtureLink: { textDecoration: 'none', color: 'inherit' },
   fixture: { display: 'flex', alignItems: 'center', gap: 16, padding: '18px 4px', borderBottom: '1px solid rgba(247,245,239,0.12)' },
-  fxTime: { fontSize: 12, color: '#8B9A92', width: 44, flex: '0 0 44px' },
   teamName: { fontSize: 14, fontWeight: 500 },
   hiddenTeams: { fontSize: 14, fontWeight: 500, color: '#8B9A92', fontStyle: 'italic' },
   vs: { color: '#8B9A92', fontSize: 11 },
-  tip: { fontSize: 11, color: '#D4A017', textTransform: 'uppercase', marginTop: 4 },
-  analysis: { fontSize: 12.5, color: '#8B9A92', marginTop: 6, maxWidth: 480 },
-  lockedPreview: { fontSize: 12.5, color: '#D4A017', marginTop: 6, fontStyle: 'italic' },
-  revealPrompt: { fontSize: 12, color: '#8B9A92', marginTop: 6 },
-  stampPending: { flex: '0 0 60px', width: 60, height: 60, borderRadius: '50%', border: '2px dashed rgba(212,160,23,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', color: '#D4A017' },
-  stampVerdict: { flex: '0 0 60px', width: 60, height: 60, borderRadius: '50%', border: '3px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', transform: 'rotate(-8deg)' },
+  finalScore: { marginLeft: 10, fontSize: 12, fontWeight: 700, color: '#D4A017', fontFamily: 'monospace' },
+  tipLine: { fontSize: 12.5, color: '#D4A017', marginTop: 6, fontWeight: 600 },
+  unlockRow: { marginTop: 8, display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' },
+  unlockBtn: { background: '#D4A017', color: '#0E1912', border: 'none', padding: '6px 14px', borderRadius: 14, fontSize: 12, fontWeight: 700, cursor: 'pointer' },
+  unlockLink: { background: 'transparent', color: '#D4A017', border: '1px solid rgba(212,160,23,0.5)', padding: '6px 14px', borderRadius: 14, fontSize: 12, fontWeight: 700, textDecoration: 'none' },
+  unlockErrorText: { fontSize: 11.5, color: '#E0665A' },
+  stamp: { flex: '0 0 60px', width: 60, height: 60, borderRadius: '50%', borderWidth: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column' },
   lock: { fontSize: 11, color: '#8B9A92', border: '1px solid rgba(247,245,239,0.12)', padding: '6px 10px', borderRadius: 14, whiteSpace: 'nowrap' },
   footer: { maxWidth: 900, margin: '40px auto 0', padding: '32px 24px 48px', borderTop: '1px solid rgba(247,245,239,0.12)' },
   footerTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 },

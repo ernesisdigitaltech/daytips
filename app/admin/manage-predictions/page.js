@@ -17,7 +17,7 @@ export default function ManagePredictionsPage() {
   const [deletingId, setDeletingId] = useState(null)
   const [deleteErrors, setDeleteErrors] = useState({})
   const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState({ kickoff: '', analysis: '' })
+  const [editForm, setEditForm] = useState({ kickoff: '' })
   const [savingEdit, setSavingEdit] = useState(false)
   const [editError, setEditError] = useState('')
 
@@ -144,7 +144,6 @@ export default function ManagePredictionsPage() {
     setEditError('')
     setEditForm({
       kickoff: toDatetimeLocalValue(fixture.kickoff_time),
-      analysis: fixture.analysis || '',
     })
   }
 
@@ -169,7 +168,7 @@ export default function ManagePredictionsPage() {
 
     const { error } = await supabase
       .from('fixtures')
-      .update({ kickoff_time: kickoffIso, analysis: editForm.analysis })
+      .update({ kickoff_time: kickoffIso })
       .eq('id', fixture.id)
 
     setSavingEdit(false)
@@ -181,7 +180,7 @@ export default function ManagePredictionsPage() {
 
     setFixtures((prev) =>
       prev.map((f) =>
-        f.id === fixture.id ? { ...f, kickoff_time: kickoffIso, analysis: editForm.analysis } : f
+        f.id === fixture.id ? { ...f, kickoff_time: kickoffIso } : f
       )
     )
     setEditingId(null)
@@ -320,14 +319,6 @@ export default function ManagePredictionsPage() {
                     style={styles.editInput}
                   />
 
-                  <label style={styles.editLabel}>Analysis</label>
-                  <textarea
-                    value={editForm.analysis}
-                    onChange={(e) => setEditForm((prev) => ({ ...prev, analysis: e.target.value }))}
-                    rows={6}
-                    style={styles.editTextarea}
-                  />
-
                   {editError && <p style={styles.editError}>{editError}</p>}
 
                   <div style={styles.actionRow}>
@@ -345,7 +336,7 @@ export default function ManagePredictionsPage() {
                 </div>
               ) : (
                 <button onClick={() => startEdit(fx)} style={styles.editToggleBtn}>
-                  Edit date, time &amp; analysis
+                  Edit date &amp; time
                 </button>
               )}
             </div>

@@ -15,7 +15,6 @@ export default function AddPredictionPage() {
   const [homeTeam, setHomeTeam] = useState('')
   const [awayTeam, setAwayTeam] = useState('')
   const [kickoffTime, setKickoffTime] = useState('')
-  const [analysis, setAnalysis] = useState('')
   const [tip, setTip] = useState('')
   const [confidence, setConfidence] = useState(70)
   const [isPremium, setIsPremium] = useState(true)
@@ -70,7 +69,7 @@ export default function AddPredictionPage() {
       home_team: homeTeam,
       away_team: awayTeam,
       kickoff_time: kickoffTime,
-      analysis: analysis,
+      analysis: '', // no longer collected — homepage doesn't display it anymore
       tip: tip,
       confidence_percent: confidence,
       is_premium: isPremium,
@@ -85,7 +84,6 @@ export default function AddPredictionPage() {
       setHomeTeam('')
       setAwayTeam('')
       setKickoffTime('')
-      setAnalysis('')
       setTip('')
       setConfidence(70)
     }
@@ -154,14 +152,6 @@ export default function AddPredictionPage() {
             value={kickoffTime}
             onChange={(e) => setKickoffTime(e.target.value)}
             style={{ width: '100%', padding: 8, marginTop: 4, marginBottom: 12 }}
-          />
-
-          <textarea
-            placeholder="Analysis"
-            value={analysis}
-            onChange={(e) => setAnalysis(e.target.value)}
-            rows={4}
-            style={{ width: '100%', padding: 8, marginBottom: 8 }}
           />
 
           <input
