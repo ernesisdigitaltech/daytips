@@ -19,8 +19,17 @@ export default function AddPredictionPage() {
   const [confidence, setConfidence] = useState(70)
   const [isPremium, setIsPremium] = useState(true)
 
+  const [bookingCodes, setBookingCodes] = useState([])
+  const [loadingCodes, setLoadingCodes] = useState(true)
+  const [bcCode, setBcCode] = useState('')
+  const [bcPlatform, setBcPlatform] = useState('')
+  const [bcOdds, setBcOdds] = useState('')
+  const [bcSaving, setBcSaving] = useState(false)
+  const [bcMessage, setBcMessage] = useState('')
+
   useEffect(() => {
     loadLeagues()
+    loadBookingCodes()
   }, [])
 
   async function loadLeagues() {
@@ -30,6 +39,52 @@ export default function AddPredictionPage() {
       .order('country', { ascending: true })
 
     if (!error) setLeagues(data)
+  }
+
+  async function loadBookingCodes() {
+    setLoadingCodes(true)
+    const { data, error } = await supabase
+      .from('booking_codes')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50)
+
+    if (!error) setBookingCodes(data)
+    setLoadingCodes(false)
+  }
+
+  async function handleCreateBookingCode(e) {
+    e.preventDefault()
+    setBcMessage('')
+
+    if (!bcCode || !bcPlatform || !bcOdds) {
+      setBcMessage('Fill in all three fields.')
+      return
+    }
+
+    setBcSaving(true)
+    const { error } = await supabase.from('booking_codes').insert({
+      code: bcCode.trim(),
+      platform: bcPlatform.trim(),
+      odds: parseFloat(bcOdds),
+    })
+    setBcSaving(false)
+
+    if (error) {
+      setBcMessage('Error: ' + error.message)
+    } else {
+      setBcMessage('Booking code added ✅')
+      setBcCode('')
+      setBcPlatform('')
+      setBcOdds('')
+      loadBookingCodes()
+    }
+  }
+
+  async function handleDeleteBookingCode(id) {
+    if (!confirm('Delete this booking code?')) return
+    const { error } = await supabase.from('booking_codes').delete().eq('id', id)
+    if (!error) setBookingCodes((prev) => prev.filter((c) => c.id !== id))
   }
 
   async function handleCreateLeague(e) {
@@ -189,6 +244,75 @@ export default function AddPredictionPage() {
       </section>
 
       {message && <p style={{ marginTop: 16 }}>{message}</p>}
+
+      {/* BOOKING CODES */}
+      <section style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginTop: 32 }}>
+        <h3 style={{ marginTop: 0 }}>3. Add Booking Code</h3>
+        <form onSubmit={handleCreateBookingCode}>
+          <input
+            placeholder="Booking Code (e.g. XR7F92)"
+            value={bcCode}
+            onChange={(e) => setBcCode(e.target.value)}
+            style={{ width: '100%', padding: 8, marginBottom: 8 }}
+          />
+          <input
+            placeholder="Bet Platform (e.g. SportyBet, Bet9ja)"
+            value={bcPlatform}
+            onChange={(e) => setBcPlatform(e.target.value)}
+            style={{ width: '100%', padding: 8, marginBottom: 8 }}
+          />
+          <input
+            type="number"
+            step="0.01"
+            placeholder="Odds (e.g. 45.20)"
+            value={bcOdds}
+            onChange={(e) => setBcOdds(e.target.value)}
+            style={{ width: '100%', padding: 8, marginBottom: 8 }}
+          />
+          <button type="submit" disabled={bcSaving} style={{ width: '100%', padding: 12 }}>
+            {bcSaving ? 'Saving...' : 'Add booking code'}
+          </button>
+        </form>
+        {bcMessage && <p style={{ marginTop: 12 }}>{bcMessage}</p>}
+      </section>
+
+      {/* BOOKING CODE HISTORY — separate from the add form above */}
+      <section style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginTop: 24 }}>
+        <h3 style={{ marginTop: 0 }}>Booking Code History</h3>
+        {loadingCodes ? (
+          <p style={{ color: '#777' }}>Loading...</p>
+        ) : bookingCodes.length === 0 ? (
+          <p style={{ color: '#777' }}>No booking codes yet.</p>
+        ) : (
+          <div>
+            {bookingCodes.map((bc) => (
+              <div
+                key={bc.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '10px 0',
+                  borderBottom: '1px solid #eee',
+                }}
+              >
+                <div>
+                  <div style={{ fontWeight: 700 }}>{bc.platform} — {bc.code}</div>
+                  <div style={{ fontSize: 12, color: '#777' }}>
+                    Odds {bc.odds} · {new Date(bc.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleDeleteBookingCode(bc.id)}
+                  style={{ background: 'none', border: 'none', color: '#a63a2e', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
     </div>
   )
 }
