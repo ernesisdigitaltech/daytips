@@ -53,6 +53,7 @@ function HomePageInner() {
 
   const [unlockingId, setUnlockingId] = useState(null)
   const [unlockError, setUnlockError] = useState({})
+  const [bookingCodes, setBookingCodes] = useState([])
 
   useEffect(() => {
     setExpandedLeagues(new Set())
@@ -79,13 +80,24 @@ function HomePageInner() {
   async function loadFixtures() {
     setLoading(true)
 
-    const [fixturesResult, userResult] = await Promise.all([
+    const todayKeyLocal = formatDateKey(new Date())
+    const startOfDay = new Date()
+    startOfDay.setHours(0, 0, 0, 0)
+
+    const [fixturesResult, userResult, bookingCodesResult] = await Promise.all([
       supabase
         .from('fixtures')
         .select('*, leagues(country, name)')
         .order('kickoff_time', { ascending: true }),
       supabase.auth.getUser(),
+      supabase
+        .from('booking_codes')
+        .select('*')
+        .gte('created_at', startOfDay.toISOString())
+        .order('created_at', { ascending: false }),
     ])
+
+    if (bookingCodesResult.data) setBookingCodes(bookingCodesResult.data)
 
     if (fixturesResult.error) {
       console.error(fixturesResult.error)
@@ -177,29 +189,18 @@ function HomePageInner() {
 
     const groups = {}
     for (const fixture of dayFixtures) {
-      const fxIsLocked =
-        fixture.is_premium && !unlockedIds.has(fixture.id) && !fixture.admin_archived && !isPro
-
-      const key = fxIsLocked ? '__locked__' : `${fixture.leagues.country}|${fixture.leagues.name}`
+      const key = `${fixture.leagues.country}|${fixture.leagues.name}`
       if (!groups[key]) {
-        groups[key] = fxIsLocked
-          ? { country: '', name: '🔒 Locked Fixtures', isLockedGroup: true, fixtures: [] }
-          : { country: fixture.leagues.country, name: fixture.leagues.name, isLockedGroup: false, fixtures: [] }
+        groups[key] = { country: fixture.leagues.country, name: fixture.leagues.name, fixtures: [] }
       }
       groups[key].fixtures.push(fixture)
     }
 
-    const sorted = Object.values(groups)
-      .filter((g) => !g.isLockedGroup)
-      .sort((a, b) => {
-        if (a.country !== b.country) return a.country.localeCompare(b.country)
-        return a.name.localeCompare(b.name)
-      })
-
-    if (groups['__locked__']) sorted.push(groups['__locked__'])
-
-    return sorted
-  }, [allFixtures, selectedDateKey, unlockedIds, isPro])
+    return Object.values(groups).sort((a, b) => {
+      if (a.country !== b.country) return a.country.localeCompare(b.country)
+      return a.name.localeCompare(b.name)
+    })
+  }, [allFixtures, selectedDateKey])
 
   return (
     <div style={styles.body}>
@@ -247,6 +248,24 @@ function HomePageInner() {
             Every fixture rated and stamped before kickoff.
           </p>
         </section>
+
+        {bookingCodes.length > 0 && (
+          <section style={styles.bookingSection}>
+            <div style={styles.bookingHeader}>
+              <span style={styles.bookingTitle}>🎟️ Daily Booking Codes</span>
+              <Link href="/booking-codes" style={styles.bookingHistoryLink}>Full history →</Link>
+            </div>
+            <div style={styles.bookingGrid}>
+              {bookingCodes.map((bc) => (
+                <div key={bc.id} style={styles.bookingCard}>
+                  <div style={styles.bookingPlatform}>{bc.platform}</div>
+                  <div style={styles.bookingCode}>{bc.code}</div>
+                  <div style={styles.bookingOdds}>Odds {Number(bc.odds).toFixed(2)}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         <div style={styles.calendarRow}>
           <button onClick={() => setWeekOffset(weekOffset - 1)} style={styles.calArrow}>‹</button>
@@ -424,6 +443,15 @@ const styles = {
   eyebrow: { fontSize: 12, letterSpacing: '0.15em', color: '#D4A017', textTransform: 'uppercase' },
   h1: { fontWeight: 800, fontSize: 52, lineHeight: 0.95, margin: '14px 0' },
   heroText: { color: '#8B9A92', fontSize: 15 },
+  bookingSection: { background: 'linear-gradient(165deg, rgba(212,160,23,0.12), rgba(212,160,23,0.03))', border: '1px solid rgba(212,160,23,0.35)', borderRadius: 14, padding: '18px 20px', marginBottom: 28 },
+  bookingHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 },
+  bookingTitle: { fontWeight: 800, fontSize: 16, color: '#F7F5EF' },
+  bookingHistoryLink: { fontSize: 12.5, color: '#D4A017', textDecoration: 'none', fontWeight: 600 },
+  bookingGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 },
+  bookingCard: { background: 'rgba(14,25,18,0.5)', border: '1px solid rgba(212,160,23,0.25)', borderRadius: 10, padding: '12px 14px' },
+  bookingPlatform: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.06em' },
+  bookingCode: { fontSize: 20, fontWeight: 800, color: '#D4A017', fontFamily: 'monospace', marginTop: 4 },
+  bookingOdds: { fontSize: 12, color: '#B8C2BC', marginTop: 4 },
   calendarRow: { display: 'flex', alignItems: 'center', gap: 8, borderTop: '1px solid rgba(247,245,239,0.12)', borderBottom: '1px solid rgba(247,245,239,0.12)', padding: '16px 0' },
   calArrow: { background: 'transparent', border: 'none', color: '#8B9A92', fontSize: 20, cursor: 'pointer', padding: '0 4px' },
   calendar: { display: 'flex', gap: 8, overflowX: 'auto', flex: 1 },
