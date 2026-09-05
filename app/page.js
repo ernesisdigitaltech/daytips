@@ -15,6 +15,20 @@ function formatDateKey(date) {
   return `${year}-${month}-${day}`
 }
 
+// Rotating palette for league header rows — dark, muted, on-brand tints so
+// each league is visually distinct when scanning many at once, without
+// clashing with the pitch-ink theme.
+const LEAGUE_COLORS = [
+  '#1c2e22', // deep green
+  '#2e2418', // deep amber
+  '#1e2a30', // deep teal-blue
+  '#2a1e26', // deep wine
+  '#242e1c', // deep olive
+  '#1e2230', // deep indigo
+  '#301e1e', // deep rust
+  '#1e2e2c', // deep teal-green
+]
+
 export default function HomePage() {
   return (
     <Suspense fallback={null}>
@@ -301,15 +315,16 @@ function HomePageInner() {
           </p>
         )}
 
-        {!loading && fixturesByLeague.map((league) => {
+        {!loading && fixturesByLeague.map((league, index) => {
           const leagueKey = league.country + league.name
           const foldable = league.fixtures.length > 1
           const isExpanded = !foldable || expandedLeagues.has(leagueKey)
+          const bgColor = LEAGUE_COLORS[index % LEAGUE_COLORS.length]
 
           return (
             <div key={leagueKey} style={{ marginTop: 40 }}>
               <div
-                style={{ ...styles.leagueHeader, cursor: foldable ? 'pointer' : 'default' }}
+                style={{ ...styles.leagueHeader, background: bgColor, cursor: foldable ? 'pointer' : 'default' }}
                 onClick={() => foldable && toggleLeague(leagueKey)}
               >
                 {league.country && <span style={styles.leagueCountry}>{league.country}</span>}
@@ -404,6 +419,10 @@ function HomePageInner() {
 
       <footer style={styles.footer}>
         <div style={styles.footerTop}>
+          <div style={styles.logo}>
+            <div style={styles.logoMark}>D</div>
+            <div style={styles.logoText}>DayTips</div>
+          </div>
           <div style={styles.footerLinks}>
             <Link href="/download" style={styles.footerLink}>Get the App</Link>
             <Link href="/privacy" style={styles.footerLink}>Privacy Policy</Link>
@@ -458,7 +477,7 @@ const styles = {
   calDay: { flex: '0 0 auto', width: 52, textAlign: 'center', padding: '8px 0', borderRadius: 10, border: '1px solid', cursor: 'pointer', color: '#F7F5EF' },
   calDow: { fontSize: 10, color: '#8B9A92', textTransform: 'uppercase' },
   calNum: { fontSize: 15, marginTop: 3 },
-  leagueHeader: { display: 'flex', alignItems: 'baseline', gap: 12, paddingBottom: 10, borderBottom: '2px solid #3B7A57' },
+  leagueHeader: { display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, borderLeft: '3px solid #D4A017' },
   leagueCountry: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.1em' },
   leagueName: { fontWeight: 700, fontSize: 22, flex: 1 },
   leagueMeta: { display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, color: '#8B9A92' },

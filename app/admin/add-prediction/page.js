@@ -14,7 +14,7 @@ export default function AddPredictionPage() {
 
   const [homeTeam, setHomeTeam] = useState('')
   const [awayTeam, setAwayTeam] = useState('')
-  const [kickoffTime, setKickoffTime] = useState('')
+  const [kickoffDate, setKickoffDate] = useState('')
   const [tip, setTip] = useState('')
   const [confidence, setConfidence] = useState(70)
   const [isPremium, setIsPremium] = useState(true)
@@ -123,7 +123,7 @@ export default function AddPredictionPage() {
       league_id: selectedLeagueId,
       home_team: homeTeam,
       away_team: awayTeam,
-      kickoff_time: kickoffTime,
+      kickoff_time: kickoffDate ? new Date(`${kickoffDate}T12:00:00`).toISOString() : null,
       analysis: '', // no longer collected — homepage doesn't display it anymore
       tip: tip,
       confidence_percent: confidence,
@@ -138,7 +138,7 @@ export default function AddPredictionPage() {
       setMessage('Fixture added ✅')
       setHomeTeam('')
       setAwayTeam('')
-      setKickoffTime('')
+      setKickoffDate('')
       setTip('')
       setConfidence(70)
     }
@@ -201,11 +201,11 @@ export default function AddPredictionPage() {
             style={{ width: '100%', padding: 8, marginBottom: 8 }}
           />
 
-          <label style={{ fontSize: 13, color: '#555' }}>Kickoff time</label>
+          <label style={{ fontSize: 13, color: '#555' }}>Match date</label>
           <input
-            type="datetime-local"
-            value={kickoffTime}
-            onChange={(e) => setKickoffTime(e.target.value)}
+            type="date"
+            value={kickoffDate}
+            onChange={(e) => setKickoffDate(e.target.value)}
             style={{ width: '100%', padding: 8, marginTop: 4, marginBottom: 12 }}
           />
 
