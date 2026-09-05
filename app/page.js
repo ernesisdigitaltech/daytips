@@ -216,6 +216,18 @@ function HomePageInner() {
     })
   }, [allFixtures, selectedDateKey])
 
+  const dayStats = useMemo(() => {
+    const dayFixtures = allFixtures.filter(
+      (fx) => formatDateKey(new Date(fx.kickoff_time)) === selectedDateKey
+    )
+    const correct = dayFixtures.filter((fx) => fx.result === 'correct').length
+    const wrong = dayFixtures.filter((fx) => fx.result === 'wrong').length
+    const pending = dayFixtures.filter((fx) => fx.result === 'pending').length
+    const resolved = correct + wrong
+    const winRate = resolved > 0 ? Math.round((correct / resolved) * 100) : null
+    return { correct, wrong, pending, total: dayFixtures.length, winRate }
+  }, [allFixtures, selectedDateKey])
+
   return (
     <div style={styles.body}>
       <header style={styles.header}>
@@ -415,6 +427,32 @@ function HomePageInner() {
             </div>
           )
         })}
+
+        {!loading && dayStats.total > 0 && (
+          <div style={styles.statsSummary}>
+            <p style={styles.statsSummaryTitle}>Day Summary</p>
+            <div style={styles.statsRow}>
+              <div style={styles.statBlock}>
+                <div style={{ ...styles.statNumber, color: '#6FBE8F' }}>{dayStats.correct}</div>
+                <div style={styles.statLabel}>Correct</div>
+              </div>
+              <div style={styles.statBlock}>
+                <div style={{ ...styles.statNumber, color: '#A63A2E' }}>{dayStats.wrong}</div>
+                <div style={styles.statLabel}>Wrong</div>
+              </div>
+              <div style={styles.statBlock}>
+                <div style={{ ...styles.statNumber, color: '#D4A017' }}>{dayStats.pending}</div>
+                <div style={styles.statLabel}>Pending</div>
+              </div>
+              {dayStats.winRate !== null && (
+                <div style={styles.statBlock}>
+                  <div style={{ ...styles.statNumber, color: '#F7F5EF' }}>{dayStats.winRate}%</div>
+                  <div style={styles.statLabel}>Win Rate</div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
       <footer style={styles.footer}>
@@ -467,6 +505,12 @@ const styles = {
   bookingPlatform: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.06em' },
   bookingCode: { fontSize: 20, fontWeight: 800, color: '#D4A017', fontFamily: 'monospace', marginTop: 4 },
   bookingOdds: { fontSize: 12, color: '#B8C2BC', marginTop: 4 },
+  statsSummary: { marginTop: 48, background: 'rgba(247,245,239,0.03)', border: '1px solid rgba(247,245,239,0.1)', borderRadius: 14, padding: '20px 24px' },
+  statsSummaryTitle: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px', textAlign: 'center' },
+  statsRow: { display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 16 },
+  statBlock: { textAlign: 'center' },
+  statNumber: { fontSize: 26, fontWeight: 800, fontFamily: 'monospace' },
+  statLabel: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 },
   calendarRow: { display: 'flex', alignItems: 'center', gap: 8, borderTop: '1px solid rgba(247,245,239,0.12)', borderBottom: '1px solid rgba(247,245,239,0.12)', padding: '16px 0' },
   calArrow: { background: 'transparent', border: 'none', color: '#8B9A92', fontSize: 20, cursor: 'pointer', padding: '0 4px' },
   calendar: { display: 'flex', gap: 8, overflowX: 'auto', flex: 1 },
