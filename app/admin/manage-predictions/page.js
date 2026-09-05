@@ -13,11 +13,12 @@ export default function ManagePredictionsPage() {
   const [savingId, setSavingId] = useState(null)
   const [scoreInputs, setScoreInputs] = useState({})
   const [showArchived, setShowArchived] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const [confirmDeleteId, setConfirmDeleteId] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [deleteErrors, setDeleteErrors] = useState({})
   const [editingId, setEditingId] = useState(null)
-  const [editForm, setEditForm] = useState({ kickoff: '' })
+  const [editForm, setEditForm] = useState({ kickoff: '', tip: '' })
   const [savingEdit, setSavingEdit] = useState(false)
   const [editError, setEditError] = useState('')
 
@@ -144,6 +145,7 @@ export default function ManagePredictionsPage() {
     setEditError('')
     setEditForm({
       kickoff: toDatetimeLocalValue(fixture.kickoff_time),
+      tip: fixture.tip || '',
     })
   }
 
@@ -157,6 +159,10 @@ export default function ManagePredictionsPage() {
       setEditError('Kickoff date and time are required.')
       return
     }
+    if (!editForm.tip.trim()) {
+      setEditError('Tip cannot be empty.')
+      return
+    }
 
     setSavingEdit(true)
     setEditError('')
@@ -165,10 +171,11 @@ export default function ManagePredictionsPage() {
     // so JS correctly parses it as the admin's LOCAL time — new Date(...)
     // then converts that to the right UTC instant for storage.
     const kickoffIso = new Date(editForm.kickoff).toISOString()
+    const tipValue = editForm.tip.trim()
 
     const { error } = await supabase
       .from('fixtures')
-      .update({ kickoff_time: kickoffIso })
+      .update({ kickoff_time: kickoffIso, tip: tipValue })
       .eq('id', fixture.id)
 
     setSavingEdit(false)
@@ -180,7 +187,7 @@ export default function ManagePredictionsPage() {
 
     setFixtures((prev) =>
       prev.map((f) =>
-        f.id === fixture.id ? { ...f, kickoff_time: kickoffIso } : f
+        f.id === fixture.id ? { ...f, kickoff_time: kickoffIso, tip: tipValue } : f
       )
     )
     setEditingId(null)
@@ -205,7 +212,18 @@ export default function ManagePredictionsPage() {
   }
 
   const archivedCount = fixtures.filter((f) => f.admin_archived).length
-  const visibleFixtures = fixtures.filter((f) => showArchived || !f.admin_archived)
+  const archivedFiltered = fixtures.filter((f) => showArchived || !f.admin_archived)
+
+  const term = searchTerm.trim().toLowerCase()
+  const visibleFixtures = term
+    ? archivedFiltered.filter((f) =>
+        f.home_team.toLowerCase().includes(term) ||
+        f.away_team.toLowerCase().includes(term) ||
+        f.leagues.country.toLowerCase().includes(term) ||
+        f.leagues.name.toLowerCase().includes(term) ||
+        (f.tip || '').toLowerCase().includes(term)
+      )
+    : archivedFiltered
 
   return (
     <div style={styles.body}>
@@ -218,6 +236,20 @@ export default function ManagePredictionsPage() {
           )}
           <Link href="/admin/add-prediction" style={styles.addLink}>+ Add Prediction</Link>
         </div>
+
+        <input
+          type="text"
+          placeholder="Search by team, league, or tip…"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          style={styles.searchInput}
+        />
+        {term && (
+          <p style={styles.searchResultCount}>
+            {visibleFixtures.length} match{visibleFixtures.length === 1 ? '' : 'es'} for "{searchTerm}"
+          </p>
+        )}
+
         <p style={styles.archiveNote}>
           Archiving only tidies this admin list — archived fixtures still show on the public homepage on their date.
         </p>
@@ -225,7 +257,7 @@ export default function ManagePredictionsPage() {
         {loading && <p style={{ color: '#8B9A92' }}>Loading fixtures...</p>}
 
         {!loading && visibleFixtures.length === 0 && (
-          <p style={{ color: '#8B9A92' }}>No fixtures to show.</p>
+          <p style={{ color: '#8B9A92' }}>{term ? 'No fixtures match your search.' : 'No fixtures to show.'}</p>
         )}
 
         {!loading && visibleFixtures.map((fx) => (
@@ -319,6 +351,15 @@ export default function ManagePredictionsPage() {
                     style={styles.editInput}
                   />
 
+                  <label style={styles.editLabel}>Tip</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Over 2.5 goals"
+                    value={editForm.tip}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, tip: e.target.value }))}
+                    style={styles.editInput}
+                  />
+
                   {editError && <p style={styles.editError}>{editError}</p>}
 
                   <div style={styles.actionRow}>
@@ -336,7 +377,7 @@ export default function ManagePredictionsPage() {
                 </div>
               ) : (
                 <button onClick={() => startEdit(fx)} style={styles.editToggleBtn}>
-                  Edit date &amp; time
+                  Edit kickoff &amp; tip
                 </button>
               )}
             </div>
@@ -391,6 +432,8 @@ const styles = {
   h1: { fontSize: 26, fontWeight: 700, margin: 0 },
   archiveToggle: { background: 'transparent', border: '1px solid rgba(247,245,239,0.2)', color: '#8B9A92', padding: '6px 12px', borderRadius: 14, fontSize: 12, cursor: 'pointer' },
   archiveNote: { fontSize: 12, color: '#8B9A9299', marginTop: 6, marginBottom: 24 },
+  searchInput: { width: '100%', padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(247,245,239,0.15)', background: '#0E1912', color: '#F7F5EF', fontSize: 14, marginTop: 14 },
+  searchResultCount: { fontSize: 12, color: '#D4A017', marginTop: 8 },
   card: { background: 'rgba(247,245,239,0.03)', border: '1px solid rgba(247,245,239,0.1)', borderRadius: 10, padding: 18, marginBottom: 14 },
   cardArchived: { opacity: 0.55 },
   archivedTag: { marginLeft: 8, fontSize: 10, color: '#8B9A92', border: '1px solid rgba(247,245,239,0.2)', padding: '1px 6px', borderRadius: 6, letterSpacing: '0.05em' },
