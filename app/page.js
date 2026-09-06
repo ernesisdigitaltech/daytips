@@ -196,6 +196,13 @@ function HomePageInner() {
 
   const todayKey = formatDateKey(new Date())
 
+  // Strips a leading flag emoji (or any non-letter prefix) so alphabetical
+  // sorting happens on the actual country name, not the emoji's Unicode
+  // code point — matches the same fix used on the Add Prediction page.
+  function stripLeadingEmoji(str) {
+    return str.replace(/^[^a-zA-Z]+/, '').trim()
+  }
+
   const fixturesByLeague = useMemo(() => {
     const dayFixtures = allFixtures.filter(
       (fx) => formatDateKey(new Date(fx.kickoff_time)) === selectedDateKey
@@ -211,7 +218,8 @@ function HomePageInner() {
     }
 
     return Object.values(groups).sort((a, b) => {
-      if (a.country !== b.country) return a.country.localeCompare(b.country)
+      const countryCompare = stripLeadingEmoji(a.country).localeCompare(stripLeadingEmoji(b.country))
+      if (countryCompare !== 0) return countryCompare
       return a.name.localeCompare(b.name)
     })
   }, [allFixtures, selectedDateKey])
