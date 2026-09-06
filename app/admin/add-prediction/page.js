@@ -32,13 +32,25 @@ export default function AddPredictionPage() {
     loadBookingCodes()
   }, [])
 
+  // Strips a leading flag emoji (or any non-letter prefix) so sorting/comparison
+  // happens on the actual country name, not the emoji's Unicode code point.
+  function stripLeadingEmoji(str) {
+    return str.replace(/^[^a-zA-Z]+/, '').trim()
+  }
+
   async function loadLeagues() {
     const { data, error } = await supabase
       .from('leagues')
       .select('*')
-      .order('country', { ascending: true })
 
-    if (!error) setLeagues(data)
+    if (!error) {
+      const sorted = [...data].sort((a, b) => {
+        const countryCompare = stripLeadingEmoji(a.country).localeCompare(stripLeadingEmoji(b.country))
+        if (countryCompare !== 0) return countryCompare
+        return a.name.localeCompare(b.name)
+      })
+      setLeagues(sorted)
+    }
   }
 
   async function loadBookingCodes() {
@@ -90,6 +102,19 @@ export default function AddPredictionPage() {
   async function handleCreateLeague(e) {
     e.preventDefault()
     if (!newLeagueCountry || !newLeagueName) return
+
+    // Prevent creating a duplicate — compare case-insensitively and ignore
+    // whitespace, since "England" and "england " should be treated as the same.
+    const normalize = (s) => stripLeadingEmoji(s).toLowerCase().trim()
+    const duplicate = leagues.find(
+      (l) => normalize(l.country) === normalize(newLeagueCountry) && l.name.toLowerCase().trim() === newLeagueName.toLowerCase().trim()
+    )
+
+    if (duplicate) {
+      setMessage(`"${newLeagueCountry} — ${newLeagueName}" already exists — select it below instead of creating it again.`)
+      setSelectedLeagueId(duplicate.id)
+      return
+    }
 
     const { data, error } = await supabase
       .from('leagues')
