@@ -283,23 +283,31 @@ function HomePageInner() {
           </p>
         </section>
 
-        {bookingCodes.length > 0 && (
-          <section style={styles.bookingSection}>
-            <div style={styles.bookingHeader}>
-              <span style={styles.bookingTitle}>🎟️ Daily Booking Codes</span>
-              <Link href="/booking-codes" style={styles.bookingHistoryLink}>Full history →</Link>
+        <section style={styles.bookingSection}>
+          <div style={styles.bookingHeader}>
+            <div style={styles.bookingHeaderLeft}>
+              <span style={styles.bookingIcon}>🎟️</span>
+              <div>
+                <div style={styles.bookingTitle}>Daily Booking Codes</div>
+                <div style={styles.bookingSubtitle}>Posted fresh today, straight to your betting platform</div>
+              </div>
             </div>
+            <Link href="/booking-codes" style={styles.bookingHistoryLink}>History →</Link>
+          </div>
+
+          {bookingCodes.length === 0 ? (
+            <div style={styles.bookingEmpty}>
+              <span style={styles.bookingEmptyIcon}>⏳</span>
+              <p style={styles.bookingEmptyText}>No booking code posted yet today — check back soon.</p>
+            </div>
+          ) : (
             <div style={styles.bookingGrid}>
               {bookingCodes.map((bc) => (
-                <div key={bc.id} style={styles.bookingCard}>
-                  <div style={styles.bookingPlatform}>{bc.platform}</div>
-                  <div style={styles.bookingCode}>{bc.code}</div>
-                  <div style={styles.bookingOdds}>Odds {Number(bc.odds).toFixed(2)}</div>
-                </div>
+                <BookingCodeCard key={bc.id} bc={bc} />
               ))}
             </div>
-          </section>
-        )}
+          )}
+        </section>
 
         <div style={styles.calendarRow}>
           <button onClick={() => setWeekOffset(weekOffset - 1)} style={styles.calArrow}>‹</button>
@@ -486,6 +494,39 @@ function HomePageInner() {
   )
 }
 
+function BookingCodeCard({ bc }) {
+  const [copied, setCopied] = useState(false)
+
+  function handleCopy() {
+    navigator.clipboard.writeText(bc.code).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    })
+  }
+
+  const minutesAgo = Math.max(0, Math.round((new Date() - new Date(bc.created_at)) / 60000))
+  const timeLabel =
+    minutesAgo < 1 ? 'Just now' :
+    minutesAgo < 60 ? `${minutesAgo}m ago` :
+    `${Math.round(minutesAgo / 60)}h ago`
+
+  return (
+    <div style={styles.bookingCard}>
+      <div style={styles.bookingCardTop}>
+        <span style={styles.bookingPlatform}>{bc.platform}</span>
+        <span style={styles.bookingTime}>{timeLabel}</span>
+      </div>
+      <div style={styles.bookingCodeRow}>
+        <span style={styles.bookingCode}>{bc.code}</span>
+        <button onClick={handleCopy} style={styles.bookingCopyBtn}>
+          {copied ? '✓ Copied' : 'Copy'}
+        </button>
+      </div>
+      <div style={styles.bookingOdds}>Odds <strong>{Number(bc.odds).toFixed(2)}</strong></div>
+    </div>
+  )
+}
+
 const styles = {
   body: { minHeight: '100vh', background: '#0E1912', color: '#F7F5EF', fontFamily: 'sans-serif' },
   header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid rgba(247,245,239,0.12)' },
@@ -504,15 +545,25 @@ const styles = {
   eyebrow: { fontSize: 12, letterSpacing: '0.15em', color: '#D4A017', textTransform: 'uppercase' },
   h1: { fontWeight: 800, fontSize: 52, lineHeight: 0.95, margin: '14px 0' },
   heroText: { color: '#8B9A92', fontSize: 15 },
-  bookingSection: { background: 'linear-gradient(165deg, rgba(212,160,23,0.12), rgba(212,160,23,0.03))', border: '1px solid rgba(212,160,23,0.35)', borderRadius: 14, padding: '18px 20px', marginBottom: 28 },
-  bookingHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 },
-  bookingTitle: { fontWeight: 800, fontSize: 16, color: '#F7F5EF' },
-  bookingHistoryLink: { fontSize: 12.5, color: '#D4A017', textDecoration: 'none', fontWeight: 600 },
-  bookingGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 },
-  bookingCard: { background: 'rgba(14,25,18,0.5)', border: '1px solid rgba(212,160,23,0.25)', borderRadius: 10, padding: '12px 14px' },
-  bookingPlatform: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.06em' },
-  bookingCode: { fontSize: 20, fontWeight: 800, color: '#D4A017', fontFamily: 'monospace', marginTop: 4 },
-  bookingOdds: { fontSize: 12, color: '#B8C2BC', marginTop: 4 },
+  bookingSection: { background: 'linear-gradient(165deg, rgba(212,160,23,0.12), rgba(212,160,23,0.03))', border: '1px solid rgba(212,160,23,0.35)', borderRadius: 16, padding: '20px 22px', marginBottom: 32 },
+  bookingHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 },
+  bookingHeaderLeft: { display: 'flex', alignItems: 'center', gap: 12 },
+  bookingIcon: { fontSize: 26 },
+  bookingTitle: { fontWeight: 800, fontSize: 17, color: '#F7F5EF' },
+  bookingSubtitle: { fontSize: 12, color: '#8B9A92', marginTop: 2 },
+  bookingHistoryLink: { fontSize: 12.5, color: '#D4A017', textDecoration: 'none', fontWeight: 700, whiteSpace: 'nowrap' },
+  bookingGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 },
+  bookingCard: { background: 'rgba(14,25,18,0.55)', border: '1px solid rgba(212,160,23,0.3)', borderRadius: 12, padding: '14px 16px' },
+  bookingCardTop: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  bookingPlatform: { fontSize: 11, color: '#D4A017', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 700, background: 'rgba(212,160,23,0.12)', padding: '3px 8px', borderRadius: 6 },
+  bookingTime: { fontSize: 10.5, color: '#8B9A9299' },
+  bookingCodeRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  bookingCode: { fontSize: 22, fontWeight: 800, color: '#F7F5EF', fontFamily: 'monospace', letterSpacing: '0.02em' },
+  bookingCopyBtn: { background: '#D4A017', color: '#0E1912', border: 'none', padding: '5px 12px', borderRadius: 8, fontSize: 11, fontWeight: 800, cursor: 'pointer', flexShrink: 0 },
+  bookingOdds: { fontSize: 12.5, color: '#B8C2BC', marginTop: 8 },
+  bookingEmpty: { display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', padding: '24px 16px' },
+  bookingEmptyIcon: { fontSize: 28, marginBottom: 8 },
+  bookingEmptyText: { fontSize: 13, color: '#8B9A92', margin: 0 },
   statsSummary: { marginTop: 48, background: 'rgba(247,245,239,0.03)', border: '1px solid rgba(247,245,239,0.1)', borderRadius: 14, padding: '20px 24px' },
   statsSummaryTitle: { fontSize: 11, color: '#8B9A92', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px', textAlign: 'center' },
   statsRow: { display: 'flex', justifyContent: 'space-around', flexWrap: 'wrap', gap: 16 },
