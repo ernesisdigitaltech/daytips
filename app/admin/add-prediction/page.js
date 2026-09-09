@@ -19,8 +19,6 @@ export default function AddPredictionPage() {
   const [confidence, setConfidence] = useState(70)
   const [isPremium, setIsPremium] = useState(true)
 
-  const [bookingCodes, setBookingCodes] = useState([])
-  const [loadingCodes, setLoadingCodes] = useState(true)
   const [bcCode, setBcCode] = useState('')
   const [bcPlatform, setBcPlatform] = useState('')
   const [bcOdds, setBcOdds] = useState('')
@@ -29,7 +27,6 @@ export default function AddPredictionPage() {
 
   useEffect(() => {
     loadLeagues()
-    loadBookingCodes()
   }, [])
 
   // Strips a leading flag emoji (or any non-letter prefix) so sorting/comparison
@@ -51,18 +48,6 @@ export default function AddPredictionPage() {
       })
       setLeagues(sorted)
     }
-  }
-
-  async function loadBookingCodes() {
-    setLoadingCodes(true)
-    const { data, error } = await supabase
-      .from('booking_codes')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(50)
-
-    if (!error) setBookingCodes(data)
-    setLoadingCodes(false)
   }
 
   async function handleCreateBookingCode(e) {
@@ -89,14 +74,7 @@ export default function AddPredictionPage() {
       setBcCode('')
       setBcPlatform('')
       setBcOdds('')
-      loadBookingCodes()
     }
-  }
-
-  async function handleDeleteBookingCode(id) {
-    if (!confirm('Delete this booking code?')) return
-    const { error } = await supabase.from('booking_codes').delete().eq('id', id)
-    if (!error) setBookingCodes((prev) => prev.filter((c) => c.id !== id))
   }
 
   async function handleCreateLeague(e) {
@@ -299,44 +277,6 @@ export default function AddPredictionPage() {
           </button>
         </form>
         {bcMessage && <p style={{ marginTop: 12 }}>{bcMessage}</p>}
-      </section>
-
-      {/* BOOKING CODE HISTORY — separate from the add form above */}
-      <section style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginTop: 24 }}>
-        <h3 style={{ marginTop: 0 }}>Booking Code History</h3>
-        {loadingCodes ? (
-          <p style={{ color: '#777' }}>Loading...</p>
-        ) : bookingCodes.length === 0 ? (
-          <p style={{ color: '#777' }}>No booking codes yet.</p>
-        ) : (
-          <div>
-            {bookingCodes.map((bc) => (
-              <div
-                key={bc.id}
-                style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '10px 0',
-                  borderBottom: '1px solid #eee',
-                }}
-              >
-                <div>
-                  <div style={{ fontWeight: 700 }}>{bc.platform} — {bc.code}</div>
-                  <div style={{ fontSize: 12, color: '#777' }}>
-                    Odds {bc.odds} · {new Date(bc.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleDeleteBookingCode(bc.id)}
-                  style={{ background: 'none', border: 'none', color: '#a63a2e', cursor: 'pointer', fontSize: 13, textDecoration: 'underline' }}
-                >
-                  Delete
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </section>
     </div>
   )

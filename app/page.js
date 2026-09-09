@@ -283,6 +283,7 @@ function HomePageInner() {
           </p>
         </section>
 
+        {selectedDateKey === todayKey && (
         <section style={styles.bookingSection}>
           <div style={styles.bookingHeader}>
             <div style={styles.bookingHeaderLeft}>
@@ -292,7 +293,6 @@ function HomePageInner() {
                 <div style={styles.bookingSubtitle}>Posted fresh today, straight to your betting platform</div>
               </div>
             </div>
-            <Link href="/booking-codes" style={styles.bookingHistoryLink}>History →</Link>
           </div>
 
           {bookingCodes.length === 0 ? (
@@ -308,6 +308,7 @@ function HomePageInner() {
             </div>
           )}
         </section>
+        )}
 
         <div style={styles.calendarRow}>
           <button onClick={() => setWeekOffset(weekOffset - 1)} style={styles.calArrow}>‹</button>
